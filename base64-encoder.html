@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder/Decoder</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+        textarea {
+            width: 98%; /* Etwas Platz lassen */
+            min-height: 150px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            resize: vertical; /* Erlaubt nur vertikale Größenänderung */
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px; /* Abstand zwischen den Buttons */
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:active {
+            background-color: #2471a3;
+        }
+        #output {
+            background-color: #ecf0f1;
+        }
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #e74c3c; /* Fehlerfarbe */
+            min-height: 1.2em; /* Platz reservieren, um Sprünge zu vermeiden */
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .description {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive Anpassungen */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+                margin: 10px auto;
+            }
+            .container {
+                padding: 15px;
+            }
+            .button-group {
+                flex-direction: column; /* Buttons untereinander auf kleinen Schirmen */
+            }
+            textarea {
+                 width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Base64 Encoder/Decoder</h1>
+        <p class="description">
+            Geben Sie Text ein, um ihn in Base64 zu kodieren, oder geben Sie Base64 ein, um ihn zu dekodieren.
+        </p>
+
+        <label for="input">Eingabe:</label>
+        <textarea id="input" placeholder="Hier Text oder Base64 einfügen..."></textarea>
+
+        <div class="button-group">
+            <button id="encodeBtn">Kodieren (Text zu Base64)</button>
+            <button id="decodeBtn">Dekodieren (Base64 zu Text)</button>
+        </div>
+
+        <label for="output">Ausgabe:</label>
+        <textarea id="output" placeholder="Ergebnis wird hier angezeigt..." readonly></textarea>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const inputText = document.getElementById('input');
+        const outputText = document.getElementById('output');
+        const encodeButton = document.getElementById('encodeBtn');
+        const decodeButton = document.getElementById('decodeBtn');
+        const statusDiv = document.getElementById('status');
+
+        // Funktion zum Kodieren von Text nach Base64 (UTF-8 sicher)
+        function encodeText() {
+            clearStatus();
+            try {
+                const text = inputText.value;
+                if (!text) {
+                    setStatus('Bitte geben Sie Text zum Kodieren ein.');
+                    return;
+                }
+                // Wandelt den UTF-8 String in ein Uint8Array um
+                const utf8Bytes = new TextEncoder().encode(text);
+                // Wandelt jedes Byte in ein Zeichen um (erzeugt einen binären String)
+                const binaryString = String.fromCharCode(...utf8Bytes);
+                // Kodiert den binären String nach Base64
+                const base64String = btoa(binaryString);
+                outputText.value = base64String;
+            } catch (error) {
+                console.error('Encoding error:', error);
+                setStatus('Fehler beim Kodieren: ' + error.message);
+            }
+        }
+
+        // Funktion zum Dekodieren von Base64 nach Text (UTF-8 sicher)
+        function decodeText() {
+            clearStatus();
+            try {
+                const base64 = inputText.value.trim(); // Trim whitespace
+                if (!base64) {
+                    setStatus('Bitte geben Sie Base64 zum Dekodieren ein.');
+                    return;
+                }
+                // Dekodiert Base64 zu einem binären String
+                const binaryString = atob(base64);
+                // Wandelt den binären String in ein Uint8Array um
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                // Dekodiert das Uint8Array als UTF-8 String
+                const text = new TextDecoder().decode(bytes);
+                outputText.value = text;
+            } catch (error) {
+                console.error('Decoding error:', error);
+                // Prüfen, ob der Fehler spezifisch auf ungültige Zeichen hinweist
+                if (error instanceof DOMException && error.name === 'InvalidCharacterError') {
+                     setStatus('Fehler: Ungültige Base64-Zeichenkette.');
+                } else {
+                     setStatus('Fehler beim Dekodieren: ' + error.message);
+                }
+            }
+        }
+
+        // Funktion zum Setzen einer Status-/Fehlermeldung
+        function setStatus(message) {
+            statusDiv.textContent = message;
+        }
+
+        // Funktion zum Löschen der Statusmeldung
+        function clearStatus() {
+            statusDiv.textContent = '';
+        }
+
+        // Event Listener für die Buttons
+        encodeButton.addEventListener('click', encodeText);
+        decodeButton.addEventListener('click', decodeText);
+
+        // Status löschen, wenn der Benutzer im Eingabefeld tippt
+        inputText.addEventListener('input', clearStatus);
+
+    </script>
+</body>
+</html>
