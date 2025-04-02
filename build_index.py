@@ -177,10 +177,10 @@ def build_colophon():
 '''
     
     # Write the HTML to colophon.html
-    with open('colophon.html', 'w') as f:
+    with open('index.html', 'w') as f:
         f.write(html_content)
     
-    print("Colophon page built successfully as colophon.html")
+    print("Colophon page built successfully as index.html")
 
 if __name__ == "__main__":
     build_colophon()
