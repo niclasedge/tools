@@ -72,6 +72,65 @@
             font-size: 0.875rem;
             color: #666;
         }
+        .reverse-picker {
+            margin-top: 2rem;
+            padding: 1rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 0.25rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 64rem;
+        }
+        .color-input-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .color-input-container input[type="color"] {
+            width: 100px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        .color-input-container button {
+            padding: 0.5rem 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .color-input-container button:hover {
+            background-color: #0056b3;
+        }
+        .mixing-instructions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .mixing-card {
+            border: 1px solid #e5e5e5;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            background-color: white;
+        }
+        .mixing-card h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+        }
+        .mixing-card .color-preview {
+            height: 2rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .mixing-card .recipe {
+            font-size: 0.875rem;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -106,6 +165,17 @@
             
             <h3>50% Mixes:</h3>
             <div id="mixedColorsDisplay" class="color-grid"></div>
+        </div>
+
+        <div class="reverse-picker">
+            <h3>Reverse Color Picker</h3>
+            <div class="color-input-container">
+                <input type="color" id="colorPicker" value="#ff0000">
+                <button id="analyzeColor">Analyze Color</button>
+            </div>
+            <div id="mixingInstructions" class="mixing-instructions">
+                <!-- Mixing instructions will be displayed here -->
+            </div>
         </div>
         
         <div class="help-text">
@@ -343,6 +413,134 @@
         // Initialize
         renderColorWheel();
         updateSelectedColor(rotation);
+
+        // Add reverse color picker functionality
+        const colorPicker = document.getElementById('colorPicker');
+        const analyzeButton = document.getElementById('analyzeColor');
+        const mixingInstructions = document.getElementById('mixingInstructions');
+
+        function rgbToHsl(r, g, b) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+
+            return [
+                Math.round(h * 360),
+                Math.round(s * 100),
+                Math.round(l * 100)
+            ];
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function findClosestColor(hsl) {
+            let closest = colorDefinitions[0];
+            let minDistance = Infinity;
+
+            for (const color of colorDefinitions) {
+                const distance = Math.abs(color.hsl[0] - hsl[0]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closest = color;
+                }
+            }
+
+            return closest;
+        }
+
+        function generateMixingInstructions(targetHsl) {
+            const primaryColors = [
+                { name: 'Red', hsl: [0, 100, 50] },
+                { name: 'Yellow', hsl: [60, 100, 50] },
+                { name: 'Blue', hsl: [210, 100, 50] }
+            ];
+
+            const secondaryColors = [
+                { name: 'Orange', hsl: [30, 100, 50] },
+                { name: 'Green', hsl: [120, 100, 50] },
+                { name: 'Violet', hsl: [270, 100, 50] }
+            ];
+
+            const instructions = [];
+
+            // Mix with primary colors
+            primaryColors.forEach(primary => {
+                const mixRatio = calculateMixRatio(targetHsl, primary.hsl);
+                if (mixRatio) {
+                    instructions.push({
+                        title: `Mix with ${primary.name}`,
+                        color: `hsl(${targetHsl[0]}, ${targetHsl[1]}%, ${targetHsl[2]}%)`,
+                        recipe: `${Math.round(mixRatio * 100)}% ${primary.name} + ${Math.round((1 - mixRatio) * 100)}% White`
+                    });
+                }
+            });
+
+            // Mix with secondary colors
+            secondaryColors.forEach(secondary => {
+                const mixRatio = calculateMixRatio(targetHsl, secondary.hsl);
+                if (mixRatio) {
+                    instructions.push({
+                        title: `Mix with ${secondary.name}`,
+                        color: `hsl(${targetHsl[0]}, ${targetHsl[1]}%, ${targetHsl[2]}%)`,
+                        recipe: `${Math.round(mixRatio * 100)}% ${secondary.name} + ${Math.round((1 - mixRatio) * 100)}% White`
+                    });
+                }
+            });
+
+            return instructions;
+        }
+
+        function calculateMixRatio(targetHsl, baseHsl) {
+            // Simple approximation - in reality, color mixing is more complex
+            const hueDiff = Math.abs(targetHsl[0] - baseHsl[0]);
+            if (hueDiff > 180) {
+                return null; // Colors are too far apart
+            }
+            return hueDiff / 180;
+        }
+
+        function displayMixingInstructions(instructions) {
+            mixingInstructions.innerHTML = instructions.map(instruction => `
+                <div class="mixing-card">
+                    <h4>${instruction.title}</h4>
+                    <div class="color-preview" style="background-color: ${instruction.color}"></div>
+                    <div class="recipe">${instruction.recipe}</div>
+                </div>
+            `).join('');
+        }
+
+        analyzeButton.addEventListener('click', () => {
+            const hexColor = colorPicker.value;
+            const rgb = hexToRgb(hexColor);
+            if (rgb) {
+                const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+                const instructions = generateMixingInstructions(hsl);
+                displayMixingInstructions(instructions);
+            }
+        });
     </script>
 </body>
 </html>
