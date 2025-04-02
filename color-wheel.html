@@ -1,326 +1,348 @@
-import React, { useState, useRef, useEffect } from 'react';
-
-const ColorWheel = () => {
-  const [rotation, setRotation] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [selectedColor, setSelectedColor] = useState(null);
-  const [mixedColors, setMixedColors] = useState({});
-  const wheelRef = useRef(null);
-  const startAngleRef = useRef(0);
-
-  // Farbdefinitionen für das Rad
-  const colorDefinitions = [
-    { name: 'Rot', hsl: [0, 100, 50], position: 0 },
-    { name: 'Rot-Orange', hsl: [15, 100, 50], position: 15 },
-    { name: 'Orange', hsl: [30, 100, 50], position: 30 },
-    { name: 'Gelb-Orange', hsl: [45, 100, 50], position: 45 },
-    { name: 'Gelb', hsl: [60, 100, 50], position: 60 },
-    { name: 'Gelb-Grün', hsl: [90, 100, 50], position: 90 },
-    { name: 'Grün', hsl: [120, 100, 50], position: 120 },
-    { name: 'Blau-Grün', hsl: [150, 100, 50], position: 150 },
-    { name: 'Cyan', hsl: [180, 100, 50], position: 180 },
-    { name: 'Blau', hsl: [210, 100, 50], position: 210 },
-    { name: 'Blau-Violett', hsl: [240, 100, 50], position: 240 },
-    { name: 'Violett', hsl: [270, 100, 50], position: 270 },
-    { name: 'Rot-Violett', hsl: [300, 100, 50], position: 300 },
-    { name: 'Rot', hsl: [360, 100, 50], position: 360 }
-  ];
-
-  const mixOptions = [
-    { name: 'Komplementär' },
-    { name: 'Rot', hsl: [0, 100, 50] },
-    { name: 'Gelb', hsl: [60, 100, 50] },
-    { name: 'Blau', hsl: [210, 100, 50] },
-    { name: 'Weiß', hsl: [0, 0, 100] },
-    { name: 'Schwarz', hsl: [0, 0, 0] }
-  ];
-
-  const onMouseDown = (e) => {
-    if (wheelRef.current) {
-      setIsDragging(true);
-      const rect = wheelRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const x = e.clientX - centerX;
-      const y = e.clientY - centerY;
-      startAngleRef.current = Math.atan2(y, x) * (180 / Math.PI) - rotation;
-    }
-  };
-
-  const onMouseMove = (e) => {
-    if (isDragging && wheelRef.current) {
-      const rect = wheelRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const x = e.clientX - centerX;
-      const y = e.clientY - centerY;
-      const angle = Math.atan2(y, x) * (180 / Math.PI);
-      let newRotation = angle - startAngleRef.current;
-      
-      // Beschränke auf 0-360 Grad
-      if (newRotation < 0) newRotation += 360;
-      if (newRotation >= 360) newRotation -= 360;
-      
-      setRotation(newRotation);
-      updateSelectedColor(newRotation);
-    }
-  };
-
-  const onMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const updateSelectedColor = (angle) => {
-    // Finde die Farbe basierend auf dem Winkel
-    let normalizedAngle = (360 - angle) % 360; // Umkehrung, damit der Zeiger korrekt zeigt
-    
-    // Finde die nächste Farbe im Farbrad
-    let selectedColorObj = colorDefinitions[0];
-    for (let i = 1; i < colorDefinitions.length; i++) {
-      if (normalizedAngle >= colorDefinitions[i-1].position && 
-          normalizedAngle < colorDefinitions[i].position) {
-        // Interpoliere zwischen den beiden Farben
-        const prevColor = colorDefinitions[i-1];
-        const nextColor = colorDefinitions[i];
-        const range = nextColor.position - prevColor.position;
-        const ratio = (normalizedAngle - prevColor.position) / range;
-        
-        const h = prevColor.hsl[0] + ratio * (nextColor.hsl[0] - prevColor.hsl[0]);
-        const s = prevColor.hsl[1];
-        const l = prevColor.hsl[2];
-        
-        selectedColorObj = {
-          name: `${prevColor.name} - ${nextColor.name}`,
-          hsl: [h, s, l],
-          position: normalizedAngle
-        };
-        break;
-      }
-    }
-    
-    setSelectedColor(selectedColorObj);
-    mixAllColors(selectedColorObj);
-  };
-
-  const mixAllColors = (baseColor) => {
-    if (!baseColor) return;
-    
-    const mixResult = {};
-    
-    mixOptions.forEach(option => {
-      mixResult[option.name] = {
-        name: `${baseColor.name} + ${option.name}`,
-        hsl: calculateMixedHsl(baseColor, option)
-      };
-    });
-    
-    setMixedColors(mixResult);
-  };
-
-  const calculateMixedHsl = (baseColor, mixOption) => {
-    const [h, s, l] = baseColor.hsl;
-    
-    switch (mixOption.name) {
-      case 'Komplementär':
-        // Komplementärfarbe ist 180° entfernt
-        return [(h + 180) % 360, s, l];
-      case 'Rot':
-      case 'Gelb':
-      case 'Blau':
-      case 'Weiß':
-      case 'Schwarz':
-        return [
-          mixHue(h, mixOption.hsl[0]), 
-          mixSat(s, mixOption.hsl[1]), 
-          mixLightness(l, mixOption.hsl[2])
-        ];
-      default:
-        return [h, s, l];
-    }
-  };
-
-  // Funktionen zum Mischen von Farben (50% Mischung)
-  const mixHue = (h1, h2) => {
-    // Spezielle Behandlung für Hue, um den kürzesten Weg zu finden
-    const diff = Math.abs(h1 - h2);
-    if (diff > 180) {
-      // Gehe den anderen Weg herum
-      if (h1 < h2) {
-        h1 += 360;
-      } else {
-        h2 += 360;
-      }
-    }
-    const result = (h1 + h2) / 2;
-    return result % 360;
-  };
-
-  const mixSat = (s1, s2) => (s1 + s2) / 2;
-  const mixLightness = (l1, l2) => (l1 + l2) / 2;
-
-  // Initialisierung beim ersten Laden
-  useEffect(() => {
-    updateSelectedColor(rotation);
-  }, []);
-
-  // Konvertiert HSL in CSS-Farbformat
-  const hslToColor = (hsl) => {
-    if (!hsl) return 'transparent';
-    return `hsl(${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%)`;
-  };
-
-  // Erstellt die Farbsegmente für das Rad
-  const renderColorWheel = () => {
-    const segments = [];
-    const segmentCount = 12;
-    const segmentAngle = 360 / segmentCount;
-    
-    for (let i = 0; i < segmentCount; i++) {
-      const startAngle = i * segmentAngle;
-      const endAngle = (i + 1) * segmentAngle;
-      const midAngle = (startAngle + endAngle) / 2;
-      
-      // Interpolierte Farbe basierend auf Position
-      let segmentColor;
-      for (let j = 1; j < colorDefinitions.length; j++) {
-        if (midAngle >= colorDefinitions[j-1].position && 
-            midAngle < colorDefinitions[j].position) {
-          const prevColor = colorDefinitions[j-1];
-          const nextColor = colorDefinitions[j];
-          const range = nextColor.position - prevColor.position;
-          const ratio = (midAngle - prevColor.position) / range;
-          
-          const h = prevColor.hsl[0] + ratio * (nextColor.hsl[0] - prevColor.hsl[0]);
-          segmentColor = `hsl(${h}, 100%, 50%)`;
-          break;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Color Wheel</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-      }
-      
-      // Berechne die Pfadkoordinaten für das Segment
-      const startRad = startAngle * (Math.PI / 180);
-      const endRad = endAngle * (Math.PI / 180);
-      const innerRadius = 80;
-      const outerRadius = 150;
-      
-      const startOuterX = Math.cos(startRad) * outerRadius;
-      const startOuterY = Math.sin(startRad) * outerRadius;
-      const endOuterX = Math.cos(endRad) * outerRadius;
-      const endOuterY = Math.sin(endRad) * outerRadius;
-      const startInnerX = Math.cos(startRad) * innerRadius;
-      const startInnerY = Math.sin(startRad) * innerRadius;
-      const endInnerX = Math.cos(endRad) * innerRadius;
-      const endInnerY = Math.sin(endRad) * innerRadius;
-      
-      // Pfaddefinition für das Segment
-      const path = `
-        M ${startOuterX} ${startOuterY}
-        A ${outerRadius} ${outerRadius} 0 0 1 ${endOuterX} ${endOuterY}
-        L ${endInnerX} ${endInnerY}
-        A ${innerRadius} ${innerRadius} 0 0 0 ${startInnerX} ${startInnerY}
-        Z
-      `;
-      
-      segments.push(
-        <path
-          key={i}
-          d={path}
-          fill={segmentColor}
-          stroke="#333"
-          strokeWidth="1"
-        />
-      );
-    }
-    
-    return segments;
-  };
-
-  // Markup für den Zeiger/Indikator
-  const renderPointer = () => {
-    return (
-      <g>
-        <line x1="0" y1="0" x2="160" y2="0" stroke="#000" strokeWidth="2" />
-        <circle cx="160" cy="0" r="5" fill="#000" />
-      </g>
-    );
-  };
-
-  // Render-Funktion für die Farbkacheln
-  const renderColorTile = (title, color, hslValues) => {
-    return (
-      <div className="flex-1 min-w-32">
-        <div className="text-sm font-medium mb-1">{title}:</div>
-        <div 
-          className="h-16 w-full rounded border shadow-sm"
-          style={{ backgroundColor: color }}
-        ></div>
-        <div className="mt-1 text-xs truncate">
-          {hslValues ? `HSL: ${Math.round(hslValues[0])}°, ${Math.round(hslValues[1])}%, ${Math.round(hslValues[2])}%` : ''}
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .wheel-container {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .color-wheel {
+            cursor: grab;
+            touch-action: none;
+        }
+        .color-tile {
+            flex: 1;
+            min-width: 8rem;
+        }
+        .color-tile-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        .color-tile-box {
+            height: 4rem;
+            width: 100%;
+            border-radius: 0.25rem;
+            border: 1px solid #e5e5e5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .color-tile-hsl {
+            margin-top: 0.25rem;
+            font-size: 0.75rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            max-width: 64rem;
+        }
+        .color-mix {
+            border: 1px solid #e5e5e5;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .help-text {
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Interactive Color Wheel</h2>
+        
+        <div class="wheel-container">
+            <svg
+                id="colorWheel"
+                width="340"
+                height="340"
+                viewBox="-170 -170 340 340"
+                class="color-wheel"
+            >
+                <g id="wheelGroup">
+                    <!-- Color segments will be inserted here -->
+                    <circle cx="0" cy="0" r="80" fill="white" stroke="#333" stroke-width="1" />
+                    <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="12">
+                        Pocket Color Wheel
+                    </text>
+                </g>
+                <g id="pointer">
+                    <line x1="0" y1="0" x2="160" y2="0" stroke="#000" stroke-width="2" />
+                    <circle cx="160" cy="0" r="5" fill="#000" />
+                </g>
+            </svg>
         </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="flex flex-col items-center p-4">
-      <h2 className="text-2xl font-bold mb-4">Interaktives Farbrad</h2>
-      
-      <div className="mb-6 relative">
-        <svg
-          ref={wheelRef}
-          width="340"
-          height="340"
-          viewBox="-170 -170 340 340"
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
-          className="cursor-grab"
-          style={{ touchAction: 'none' }}
-        >
-          <g transform={`rotate(${rotation})`}>
-            {renderColorWheel()}
-            <circle cx="0" cy="0" r="80" fill="white" stroke="#333" strokeWidth="1" />
-            <text x="0" y="0" textAnchor="middle" dominantBaseline="middle" fontSize="12">
-              Pocket Color Wheel
-            </text>
-          </g>
-          {renderPointer()}
-        </svg>
-      </div>
-      
-      <div className="w-full max-w-4xl">
-        <div className="mb-4">
-          <h3 className="text-lg font-medium mb-2">Ausgewählte Farbe:</h3>
-          <div className="flex justify-center mb-4">
-            {selectedColor && renderColorTile(
-              selectedColor.name,
-              hslToColor(selectedColor.hsl),
-              selectedColor.hsl
-            )}
-          </div>
-          
-          <h3 className="text-lg font-medium mb-2">50% Mischungen:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {Object.entries(mixedColors).map(([key, colorData]) => (
-              <div key={key} className="border p-2 rounded shadow-sm">
-                <div className="text-md font-medium">{key}</div>
-                {renderColorTile(
-                  colorData.name,
-                  hslToColor(colorData.hsl),
-                  colorData.hsl
-                )}
-              </div>
-            ))}
-          </div>
+        
+        <div class="color-display">
+            <h3>Selected Color:</h3>
+            <div id="selectedColorDisplay" class="color-tile"></div>
+            
+            <h3>50% Mixes:</h3>
+            <div id="mixedColorsDisplay" class="color-grid"></div>
         </div>
-      </div>
-      
-      <div className="mt-6 text-sm text-gray-600">
-        <p>Klicken und ziehen Sie das Farbrad, um die Farbe zu ändern. Der Zeiger zeigt die ausgewählte Farbe an.</p>
-        <p>Alle Mischungen zeigen, wie die Farbe zu 50% mit den verschiedenen Optionen gemischt aussieht.</p>
-      </div>
+        
+        <div class="help-text">
+            <p>Click and drag the color wheel to change the color. The pointer shows the selected color.</p>
+            <p>All mixes show how the color looks when mixed 50% with different options.</p>
+        </div>
     </div>
-  );
-};
 
-export default ColorWheel;
+    <script>
+        // Color definitions
+        const colorDefinitions = [
+            { name: 'Red', hsl: [0, 100, 50], position: 0 },
+            { name: 'Red-Orange', hsl: [15, 100, 50], position: 15 },
+            { name: 'Orange', hsl: [30, 100, 50], position: 30 },
+            { name: 'Yellow-Orange', hsl: [45, 100, 50], position: 45 },
+            { name: 'Yellow', hsl: [60, 100, 50], position: 60 },
+            { name: 'Yellow-Green', hsl: [90, 100, 50], position: 90 },
+            { name: 'Green', hsl: [120, 100, 50], position: 120 },
+            { name: 'Blue-Green', hsl: [150, 100, 50], position: 150 },
+            { name: 'Cyan', hsl: [180, 100, 50], position: 180 },
+            { name: 'Blue', hsl: [210, 100, 50], position: 210 },
+            { name: 'Blue-Violet', hsl: [240, 100, 50], position: 240 },
+            { name: 'Violet', hsl: [270, 100, 50], position: 270 },
+            { name: 'Red-Violet', hsl: [300, 100, 50], position: 300 },
+            { name: 'Red', hsl: [360, 100, 50], position: 360 }
+        ];
+
+        const mixOptions = [
+            { name: 'Complementary' },
+            { name: 'Red', hsl: [0, 100, 50] },
+            { name: 'Yellow', hsl: [60, 100, 50] },
+            { name: 'Blue', hsl: [210, 100, 50] },
+            { name: 'White', hsl: [0, 0, 100] },
+            { name: 'Black', hsl: [0, 0, 0] }
+        ];
+
+        let rotation = 0;
+        let isDragging = false;
+        let startAngle = 0;
+        let selectedColor = null;
+
+        // DOM Elements
+        const wheel = document.getElementById('colorWheel');
+        const wheelGroup = document.getElementById('wheelGroup');
+        const selectedColorDisplay = document.getElementById('selectedColorDisplay');
+        const mixedColorsDisplay = document.getElementById('mixedColorsDisplay');
+
+        // Initialize color wheel segments
+        function renderColorWheel() {
+            const segmentCount = 12;
+            const segmentAngle = 360 / segmentCount;
+            
+            for (let i = 0; i < segmentCount; i++) {
+                const startAngle = i * segmentAngle;
+                const endAngle = (i + 1) * segmentAngle;
+                const midAngle = (startAngle + endAngle) / 2;
+                
+                let segmentColor;
+                for (let j = 1; j < colorDefinitions.length; j++) {
+                    if (midAngle >= colorDefinitions[j-1].position && 
+                        midAngle < colorDefinitions[j].position) {
+                        const prevColor = colorDefinitions[j-1];
+                        const nextColor = colorDefinitions[j];
+                        const range = nextColor.position - prevColor.position;
+                        const ratio = (midAngle - prevColor.position) / range;
+                        
+                        const h = prevColor.hsl[0] + ratio * (nextColor.hsl[0] - prevColor.hsl[0]);
+                        segmentColor = `hsl(${h}, 100%, 50%)`;
+                        break;
+                    }
+                }
+                
+                const startRad = startAngle * (Math.PI / 180);
+                const endRad = endAngle * (Math.PI / 180);
+                const innerRadius = 80;
+                const outerRadius = 150;
+                
+                const startOuterX = Math.cos(startRad) * outerRadius;
+                const startOuterY = Math.sin(startRad) * outerRadius;
+                const endOuterX = Math.cos(endRad) * outerRadius;
+                const endOuterY = Math.sin(endRad) * outerRadius;
+                const startInnerX = Math.cos(startRad) * innerRadius;
+                const startInnerY = Math.sin(startRad) * innerRadius;
+                const endInnerX = Math.cos(endRad) * innerRadius;
+                const endInnerY = Math.sin(endRad) * innerRadius;
+                
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", `
+                    M ${startOuterX} ${startOuterY}
+                    A ${outerRadius} ${outerRadius} 0 0 1 ${endOuterX} ${endOuterY}
+                    L ${endInnerX} ${endInnerY}
+                    A ${innerRadius} ${innerRadius} 0 0 0 ${startInnerX} ${startInnerY}
+                    Z
+                `);
+                path.setAttribute("fill", segmentColor);
+                path.setAttribute("stroke", "#333");
+                path.setAttribute("stroke-width", "1");
+                
+                wheelGroup.insertBefore(path, wheelGroup.firstChild);
+            }
+        }
+
+        // Mouse event handlers
+        wheel.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = wheel.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const x = e.clientX - centerX;
+            const y = e.clientY - centerY;
+            startAngle = Math.atan2(y, x) * (180 / Math.PI) - rotation;
+        });
+
+        wheel.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const rect = wheel.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const x = e.clientX - centerX;
+                const y = e.clientY - centerY;
+                const angle = Math.atan2(y, x) * (180 / Math.PI);
+                let newRotation = angle - startAngle;
+                
+                if (newRotation < 0) newRotation += 360;
+                if (newRotation >= 360) newRotation -= 360;
+                
+                rotation = newRotation;
+                wheelGroup.style.transform = `rotate(${rotation}deg)`;
+                updateSelectedColor(rotation);
+            }
+        });
+
+        wheel.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        wheel.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+
+        // Color mixing functions
+        function mixHue(h1, h2) {
+            const diff = Math.abs(h1 - h2);
+            if (diff > 180) {
+                if (h1 < h2) {
+                    h1 += 360;
+                } else {
+                    h2 += 360;
+                }
+            }
+            const result = (h1 + h2) / 2;
+            return result % 360;
+        }
+
+        function mixSat(s1, s2) {
+            return (s1 + s2) / 2;
+        }
+
+        function mixLightness(l1, l2) {
+            return (l1 + l2) / 2;
+        }
+
+        function calculateMixedHsl(baseColor, mixOption) {
+            const [h, s, l] = baseColor.hsl;
+            
+            switch (mixOption.name) {
+                case 'Complementary':
+                    return [(h + 180) % 360, s, l];
+                case 'Red':
+                case 'Yellow':
+                case 'Blue':
+                case 'White':
+                case 'Black':
+                    return [
+                        mixHue(h, mixOption.hsl[0]), 
+                        mixSat(s, mixOption.hsl[1]), 
+                        mixLightness(l, mixOption.hsl[2])
+                    ];
+                default:
+                    return [h, s, l];
+            }
+        }
+
+        // Update selected color and mixed colors
+        function updateSelectedColor(angle) {
+            let normalizedAngle = (360 - angle) % 360;
+            
+            let selectedColorObj = colorDefinitions[0];
+            for (let i = 1; i < colorDefinitions.length; i++) {
+                if (normalizedAngle >= colorDefinitions[i-1].position && 
+                    normalizedAngle < colorDefinitions[i].position) {
+                    const prevColor = colorDefinitions[i-1];
+                    const nextColor = colorDefinitions[i];
+                    const range = nextColor.position - prevColor.position;
+                    const ratio = (normalizedAngle - prevColor.position) / range;
+                    
+                    const h = prevColor.hsl[0] + ratio * (nextColor.hsl[0] - prevColor.hsl[0]);
+                    const s = prevColor.hsl[1];
+                    const l = prevColor.hsl[2];
+                    
+                    selectedColorObj = {
+                        name: `${prevColor.name} - ${nextColor.name}`,
+                        hsl: [h, s, l],
+                        position: normalizedAngle
+                    };
+                    break;
+                }
+            }
+            
+            selectedColor = selectedColorObj;
+            updateDisplays(selectedColor);
+        }
+
+        function updateDisplays(selectedColor) {
+            // Update selected color display
+            selectedColorDisplay.innerHTML = `
+                <div class="color-tile-title">${selectedColor.name}:</div>
+                <div class="color-tile-box" style="background-color: hsl(${selectedColor.hsl[0]}, ${selectedColor.hsl[1]}%, ${selectedColor.hsl[2]}%)"></div>
+                <div class="color-tile-hsl">HSL: ${Math.round(selectedColor.hsl[0])}°, ${Math.round(selectedColor.hsl[1])}%, ${Math.round(selectedColor.hsl[2])}%</div>
+            `;
+
+            // Update mixed colors display
+            mixedColorsDisplay.innerHTML = mixOptions.map(option => {
+                const mixedHsl = calculateMixedHsl(selectedColor, option);
+                return `
+                    <div class="color-mix">
+                        <div class="color-tile-title">${option.name}</div>
+                        <div class="color-tile-box" style="background-color: hsl(${mixedHsl[0]}, ${mixedHsl[1]}%, ${mixedHsl[2]}%)"></div>
+                        <div class="color-tile-hsl">HSL: ${Math.round(mixedHsl[0])}°, ${Math.round(mixedHsl[1])}%, ${Math.round(mixedHsl[2])}%</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize
+        renderColorWheel();
+        updateSelectedColor(rotation);
+    </script>
+</body>
+</html>
