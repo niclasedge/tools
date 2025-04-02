@@ -120,13 +120,13 @@ def build_colophon():
 </head>
 <body>
     <h1>Tools Colophon</h1>
-    <p>This page documents the creation of the tools on <a href="https://tools.simonwillison.net/">tools.simonwillison.net</a>, 
+    <p>This page documents the creation of the tools on <a href="https://niclasedge.github.io/tools/">niclasedge.github.io/tools</a>, 
     including links to the Claude conversations used to build them.</p>
 '''
     
     # Add each page with its commits
     for page_name, page_data in sorted_pages:
-        tool_url = f"https://tools.simonwillison.net/{page_name.replace('.html', '')}"
+        tool_url = f"https://niclasedge.github.io/tools/{page_name.replace('.html', '')}"
         commits = page_data.get('commits', [])
         
         # Reverse the commits list to show oldest first
@@ -154,7 +154,7 @@ def build_colophon():
             
             commit_message = commit.get('message', '')
             formatted_message = format_commit_message(commit_message)
-            commit_url = f"https://github.com/simonw/tools/commit/{commit_hash}"
+            commit_url = f"https://github.com/niclasedge/tools/commit/{commit_hash}"
             
             html_content += f'''
         <div class="commit">
