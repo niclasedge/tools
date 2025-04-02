@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools Collection</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+            color: #1a1a1a;
+        }
+        h1 {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+        }
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .tool-card {
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: transform 0.2s;
+        }
+        .tool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .tool-card h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+        .tool-card a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .tool-card a:hover {
+            text-decoration: underline;
+        }
+        .colophon-link {
+            display: inline-block;
+            margin-top: 2rem;
+            color: #666;
+            text-decoration: none;
+        }
+        .colophon-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tools Collection</h1>
+    <p>A collection of useful web tools and utilities.</p>
+    
+    <div class="tools-grid">
+        <div class="tool-card">
+            <h2><a href="color-wheel.html">Color Wheel</a></h2>
+            <p>Interactive color wheel tool for color selection and visualization.</p>
+        </div>
+        <div class="tool-card">
+            <h2><a href="base64-encoder.html">Base64 Encoder</a></h2>
+            <p>Encode and decode text using Base64 encoding.</p>
+        </div>
+        <!-- Add more tool cards as you create more tools -->
+    </div>
+
+    <a href="colophon.html" class="colophon-link">About these tools →</a>
+</body>
+</html> 

@@ -17,7 +17,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.x'
+        python-version: '3.11'
     
     - name: Install dependencies
       run: |
@@ -25,13 +25,16 @@ jobs:
         
     - name: Build the site
       run: |
+        # Create site directory
         mkdir -p _site
-        # Copy your HTML files
-        cp *.html _site/
-        # Run your Python scripts if needed
+        
+        # Run Python scripts first
         python gather_links.py
         python build_colophon.py
         
+        # Copy all necessary files to _site
+        cp *.html _site/
+        cp *.json _site/ || true  # Copy JSON files if they exist
         
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
