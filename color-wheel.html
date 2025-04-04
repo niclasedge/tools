@@ -189,6 +189,7 @@
             border: 1px solid #e5e5e5;
             border-radius: 0.25rem;
             overflow: hidden;
+            margin-bottom: 1rem;
         }
         .color-swatch {
             height: 80px;
@@ -200,6 +201,53 @@
         }
         .color-details p {
             margin: 0.25rem 0;
+        }
+        .bar-chart {
+            display: flex;
+            height: 16px;
+            width: 100%;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .bar-r {
+            background-color: rgba(255, 0, 0, 0.7);
+            height: 100%;
+        }
+        .bar-g {
+            background-color: rgba(0, 255, 0, 0.7);
+            height: 100%;
+        }
+        .bar-b {
+            background-color: rgba(0, 0, 255, 0.7);
+            height: 100%;
+        }
+        .value-bar {
+            background-color: #333;
+            height: 16px;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            position: relative;
+        }
+        .value-fill {
+            background-color: #777;
+            height: 100%;
+            border-radius: 8px;
+            position: relative;
+        }
+        .value-label {
+            position: absolute;
+            right: 5px;
+            color: white;
+            font-size: 0.75rem;
+            line-height: 16px;
+            text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+        .rgb-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
         }
         .loading-indicator {
             display: none;
@@ -850,11 +898,11 @@
                 // Convert to array and sort by count
                 const colors = Object.values(colorMap).sort((a, b) => b.count - a.count);
                 
-                // Take top 5 colors with sufficient difference
+                // Take top 10 colors with sufficient difference
                 const dominantColors = [];
                 let index = 0;
                 
-                while (dominantColors.length < 5 && index < colors.length) {
+                while (dominantColors.length < 10 && index < colors.length) {
                     const color = colors[index];
                     
                     // Check if this color is sufficiently different from already selected colors
@@ -912,9 +960,24 @@
                     <div class="palette-color">
                         <div class="color-swatch" style="background-color: rgb(${r}, ${g}, ${b})"></div>
                         <div class="color-details">
-                            <p><strong>RGB:</strong> ${r}, ${g}, ${b}</p>
-                            <p><strong>RGB %:</strong> R: ${rPercent.toFixed(0)}%, G: ${gPercent.toFixed(0)}%, B: ${bPercent.toFixed(0)}%</p>
-                            <p><strong>Value:</strong> ${value.toFixed(0)}%</p>
+                            <p><strong>RGB Composition:</strong></p>
+                            <div class="bar-chart">
+                                <div class="bar-r" style="width: ${rPercent}%"></div>
+                                <div class="bar-g" style="width: ${gPercent}%"></div>
+                                <div class="bar-b" style="width: ${bPercent}%"></div>
+                            </div>
+                            <div class="rgb-label">
+                                <span>R: ${rPercent.toFixed(0)}%</span>
+                                <span>G: ${gPercent.toFixed(0)}%</span>
+                                <span>B: ${bPercent.toFixed(0)}%</span>
+                            </div>
+                            
+                            <p><strong>Value:</strong></p>
+                            <div class="value-bar">
+                                <div class="value-fill" style="width: ${value}%">
+                                    <span class="value-label">${value.toFixed(0)}%</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
