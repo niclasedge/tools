@@ -31,6 +31,7 @@ jobs:
         # Run Python scripts first
         python gather_links.py
         python build_index.py
+        python db_to_json.py
         
         # Copy all necessary files to _site
         cp *.html _site/
