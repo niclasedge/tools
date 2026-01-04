@@ -16,6 +16,181 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
+import re
+
+
+# ============== Mindmap Prompt Template ==============
+
+MINDMAP_PROMPT_TEMPLATE = '''<Prompt>
+    <Role>Du bist ein Experte für Wissensvisualisierung und Mindmapping. Deine Aufgabe ist es, den unten folgenden Text zu analysieren und ihn in eine hochstrukturierte, optimierte und intuitive Level-3-Mindmap umzuwandeln.</Role>
+
+    <Goal>Erstelle eine Mindmap, die tiefes Verständnis fördert, Schlüsselkonzepte hervorhebt, Beziehungen klar aufzeigt und leicht merkbar ist. Sie soll die Prinzipien einer Level-3-Mindmap verkörpern.</Goal>
+
+    <OutputFormat>
+        Gib **ausschließlich** Graphviz `digraph` Code im DOT-Format aus. Orientiere dich dabei am Stil und der Syntax des `<SimplifiedSyntaxExample>` unten.
+    </OutputFormat>
+
+    <CoreInstructions>
+        <Instruction id="1" category="Hauptthema">
+            <title>Hauptthema Identifizieren</title>
+            <details>
+                - Identifiziere das zentrale Thema des Textes.
+                - Mache es zum visuellen Zentrum (z.B. `shape=doubleoctagon`, `penwidth=2`, eigene `fillcolor`).
+            </details>
+        </Instruction>
+
+        <Instruction id="2" category="Struktur">
+            <title>Kernkonzepte & Struktur</title>
+            <details>
+                - Extrahiere Hauptideen/Themen als Hauptknoten.
+                - Organisiere Knoten hierarchisch und logisch.
+                - Nutze `rankdir=LR` (oder `TB` falls passender).
+            </details>
+        </Instruction>
+
+        <Instruction id="3" category="Gruppierung">
+            <title>Gruppierung (Cluster)</title>
+            <details>
+                - Gruppiere thematisch verwandte Knoten klar mit `subgraph cluster_...`.
+                - Gib Clustern aussagekräftige `label` und dezente `fillcolor`:
+                  - Hellgelb/Orange für Basis/Gründe: `#FFF3CD`, `#FFEBCD`
+                  - Hellblau für Ziele/Kompetenzen: `#DAE8FC`, `#EBF5FB`
+                  - Hellgrün für Nutzen/Nachhaltigkeit: `#D5E8D4`, `#E8F5E9`
+            </details>
+        </Instruction>
+
+        <Instruction id="4" category="Knoten-Styling">
+            <title>Knoten-Styling</title>
+            <details>
+                - **Labels:** Extrem prägnante Schlüsselwörter/Phrasen (keine Sätze!).
+                - **Umlaute:** Ersetze ä, ö, ü, ß **konsequent** durch ae, oe, ue, ss.
+                - **Visuelle Kodierung:** Nutze `shape` (z.B. `ellipse`, `box`, `note`, `hexagon`, `diamond`) und `fillcolor` gezielt für Knotentypen oder Wichtigkeit.
+                - **Betonung:** Wichtige Knoten mit `penwidth=1.5` oder `2`.
+                - **Details:** Lange Erklärungen ins `tooltip`-Attribut.
+            </details>
+        </Instruction>
+
+        <Instruction id="5" category="Verbindungen">
+            <title>Verbindungen (Kanten)</title>
+            <details>
+                - Zeichne Kanten nur für klare Beziehungen.
+                - **Beschriftung:** Verwende **`xlabel`** (wichtig: *nicht* `label`!) zur Beschreibung der Beziehung (z.B. `xlabel="fuehrt zu"`).
+                - **Betonung:** Wichtige Kanten mit `penwidth=1.5` oder `2` und/oder `color` (z.B. `color=blue` für Hauptfortschritt, `color=darkgreen` für wichtigste Begründung).
+                - **Stil:** Nutze `style=dashed`/`dotted` für sekundäre oder implizite Beziehungen.
+                - **Richtung:** Setze `dir=forward`/`back` wenn die Richtung wesentlich ist.
+            </details>
+        </Instruction>
+
+        <Instruction id="6" category="Qualitaet">
+            <title>Qualität & Fokus</title>
+            <details>
+                - Ziel: Logische, klare, nicht überladene Struktur.
+                - Fokus auf *Bedeutung* und *Zusammenhänge*, nicht nur Auflistung.
+            </details>
+        </Instruction>
+
+        <Instruction id="7" category="Graphviz-Einstellungen">
+            <title>Graphviz-Einstellungen</title>
+            <details>
+                - Verwende globale Einstellungen wie im `<SimplifiedSyntaxExample>` (z.B. `splines=ortho`, `nodesep`, `ranksep`, `fontsize`, `fontname`).
+                - Definiere sinnvolle Default-Styles für `node` und `edge`. Diese dürfen *nicht* leer sein:
+                    - node [style=filled, shape=box, fontname="Arial", fontsize=10];
+                    - edge [fontname="Arial", fontsize=9, color=gray50];
+                - wenn keine stile definiert werden sollen und die defaults genutzt werden, keine node ; oder edge ; angeben
+            </details>
+        </Instruction>
+
+        <Instruction id="8" category="Konsistenz">
+             <title>Konsistenz</title>
+             <details>Halte dich stilistisch eng an das `<SimplifiedSyntaxExample>` (Farben, Formen, Betonung).</details>
+        </Instruction>
+    </CoreInstructions>
+
+    <SimplifiedSyntaxExample>
+        <title>Simplified Syntax Example (als Stil-Referenz)</title>
+        <code>
+digraph Gruende_Ziele_Ausbildung {{
+    // Global Settings
+    rankdir=LR;
+    splines=ortho;
+    nodesep=0.5; ranksep=1.0;
+    overlap=false; pack=true; packmode="graph"; sep="+10,10";
+    fontsize=12; fontname="Arial";
+
+    // Default Styles (MUST contain styles)
+    node [style=filled, shape=box, fontname="Arial", fontsize=10];
+    edge [fontname="Arial", fontsize=9, color=gray50];
+
+    // Central Topic
+    Hauptthema [label="Gruende und Ziele
+der Ausbildung", shape=doubleoctagon, penwidth=2, fillcolor="#D0E0F0", fontsize=14];
+
+    // Cluster Example (Reasons/Base -> Yellow/Orange)
+    subgraph cluster_Gruende {{
+        label="Gruende fuer die Ausbildung"; fillcolor="#FFF3CD"; style=filled; penwidth=1; fontsize=11; fontname="Arial Bold";
+
+        Wettbewerbsvorteil [label="Wettbewerbsvorteil", shape=hexagon, penwidth=2, fillcolor="#FFDAB9", tooltip="Wichtigster Grund..."];
+        Nachwuchssicherung [label="Sicherung
+Fachkraefte-Nachwuchs", shape=ellipse, fillcolor="#FFEBCD"];
+
+        // Sub-Cluster Example
+        subgraph cluster_OperativeKostengruende {{
+            label = "Operative & Kostenvorteile"; fillcolor="#FFFFE0"; style=filled; fontsize=10;
+            Identifikation [label="Identifikation
+mit Betrieb", shape=note];
+            KostenRekrutierung [label="Geringere
+Rekrutierungskosten", shape=note, fillcolor="#F5CBA7"];
+        }}
+    }}
+
+     // Cluster Example 2 (Goals/Competencies -> Blue)
+    subgraph cluster_Ziele {{
+        label="Ziele der Ausbildung"; fillcolor="#DAE8FC"; style=filled; penwidth=1; fontsize=11; fontname="Arial Bold";
+        Handlungsfaehigkeit [label="Berufliche
+Handlungsfaehigkeit", shape=diamond, penwidth=2, fillcolor="#A8C7FA", fontsize=12];
+
+        subgraph cluster_Kompetenzen {{
+             label="Kompetenzen"; fillcolor="#EBF5FB"; style=filled; fontsize=10;
+             SozialKomp [label="Sozialkompetenz", shape=ellipse, fillcolor="#D6EAF8"];
+             /* ... other competencies ... */
+        }}
+    }}
+
+     // Cluster Example 3 (Benefits/Sustainability -> Green)
+    subgraph cluster_Nachhaltigkeit {{
+        label="Nachhaltigkeit & Zukunftsfaehigkeit"; fillcolor="#D5E8D4"; style=filled; penwidth=1; fontsize=11; fontname="Arial Bold";
+        Nutzen [label="Nutzen der Ausbildung", shape=hexagon, fillcolor="#A3D9A5"];
+        subgraph cluster_NutzenJungeMenschen {{
+             label = "fuer Junge Menschen"; fillcolor="#E8F5E9"; style=filled; fontsize=10;
+             EinstiegBeruf [label="Erleichterter
+Berufseinstieg", shape=note];
+              /* ... other benefits ... */
+        }}
+    }}
+
+    // Edge Examples
+    Hauptthema -> Wettbewerbsvorteil [xlabel="wichtigster Grund", penwidth=2, color=darkgreen, dir=forward];
+    Hauptthema -> Handlungsfaehigkeit [xlabel="Hauptziel", penwidth=2, color=blue, dir=forward];
+    Wettbewerbsvorteil -> Nachwuchssicherung [xlabel="durch", penwidth=1.5];
+    Nachwuchssicherung -> KostenRekrutierung [xlabel="senkt"];
+}}
+        </code>
+    </SimplifiedSyntaxExample>
+
+    <InputText>
+        <label>Eingabetext:</label>
+        <content>
+---
+{text}
+---
+        </content>
+    </InputText>
+
+    <OutputFormatReminder>
+        **Ausgabe:** Bitte gib NUR den vollständigen Graphviz `digraph` Code aus, ohne zusätzliche Erklärungen davor oder danach.
+    </OutputFormatReminder>
+
+</Prompt>'''
 
 
 class ValidationResult(Enum):
@@ -283,8 +458,6 @@ def extract_dot_code(text: str) -> Optional[str]:
     Returns:
         Der extrahierte DOT-Code oder None
     """
-    import re
-
     # Versuche Code aus Markdown-Codeblöcken zu extrahieren
     # Pattern für ```dot ... ``` oder ```graphviz ... ``` oder ``` ... ```
     patterns = [
@@ -313,6 +486,188 @@ def extract_dot_code(text: str) -> Optional[str]:
             return match.group(1).strip()
 
     return None
+
+
+def list_ollama_models() -> List[Dict[str, Any]]:
+    """
+    Listet alle verfügbaren Ollama-Modelle auf.
+
+    Returns:
+        Liste von Modell-Informationen
+    """
+    try:
+        import ollama
+        models_response = ollama.list()
+        models = models_response.get('models', [])
+        return models
+    except ImportError:
+        print("Fehler: Ollama Python-Paket nicht installiert.")
+        print("Installieren mit: pip install ollama")
+        return []
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Modelle: {e}")
+        return []
+
+
+def get_model_names() -> List[str]:
+    """
+    Gibt eine Liste der Namen aller verfügbaren Ollama-Modelle zurück.
+
+    Returns:
+        Liste von Modellnamen
+    """
+    models = list_ollama_models()
+    return [m.get('name', m.get('model', '')) for m in models if m]
+
+
+def print_available_models() -> List[str]:
+    """
+    Zeigt alle verfügbaren Ollama-Modelle an und gibt deren Namen zurück.
+
+    Returns:
+        Liste von Modellnamen
+    """
+    models = list_ollama_models()
+
+    if not models:
+        print("Keine Ollama-Modelle gefunden.")
+        print("Stellen Sie sicher, dass Ollama läuft und Modelle installiert sind.")
+        return []
+
+    print("\nVerfügbare Ollama-Modelle:")
+    print("-" * 50)
+
+    model_names = []
+    for i, model in enumerate(models, 1):
+        name = model.get('name', model.get('model', 'Unknown'))
+        size = model.get('size', 0)
+        size_gb = size / (1024**3) if size else 0
+
+        model_names.append(name)
+        print(f"  [{i}] {name}")
+        if size_gb > 0:
+            print(f"      Größe: {size_gb:.1f} GB")
+
+    print("-" * 50)
+    return model_names
+
+
+def select_models_interactive() -> List[str]:
+    """
+    Interaktive Auswahl von Modellen.
+
+    Returns:
+        Liste der ausgewählten Modellnamen
+    """
+    model_names = print_available_models()
+
+    if not model_names:
+        return []
+
+    print("\nOptionen:")
+    print("  - Nummern eingeben (z.B. '1,3,5' oder '1-3')")
+    print("  - 'all' für alle Modelle")
+    print("  - 'q' zum Abbrechen")
+
+    while True:
+        choice = input("\nAuswahl: ").strip().lower()
+
+        if choice == 'q':
+            return []
+
+        if choice == 'all':
+            return model_names
+
+        # Parse die Auswahl
+        selected = []
+        try:
+            parts = choice.replace(' ', '').split(',')
+            for part in parts:
+                if '-' in part:
+                    # Range wie "1-3"
+                    start, end = part.split('-')
+                    for i in range(int(start), int(end) + 1):
+                        if 1 <= i <= len(model_names):
+                            selected.append(model_names[i - 1])
+                else:
+                    # Einzelne Nummer
+                    idx = int(part)
+                    if 1 <= idx <= len(model_names):
+                        selected.append(model_names[idx - 1])
+
+            if selected:
+                # Entferne Duplikate, behalte Reihenfolge
+                seen = set()
+                unique = []
+                for m in selected:
+                    if m not in seen:
+                        seen.add(m)
+                        unique.append(m)
+                return unique
+            else:
+                print("Keine gültige Auswahl. Bitte erneut versuchen.")
+
+        except ValueError:
+            print("Ungültige Eingabe. Bitte Nummern, Bereiche oder 'all' eingeben.")
+
+
+def create_mindmap_prompt(text: str) -> str:
+    """
+    Erstellt den vollständigen Mindmap-Prompt mit dem eingegebenen Text.
+
+    Args:
+        text: Der zu analysierende Text
+
+    Returns:
+        Der vollständige Prompt
+    """
+    return MINDMAP_PROMPT_TEMPLATE.format(text=text)
+
+
+def generate_mindmap(
+    text: str,
+    model: str,
+    output_path: Optional[str] = None,
+    output_dir: str = "./mindmaps"
+) -> Dict[str, Any]:
+    """
+    Generiert eine Mindmap aus Text mit einem Ollama-Modell.
+
+    Args:
+        text: Der zu visualisierende Text
+        model: Name des Ollama-Modells
+        output_path: Optionaler Pfad für die PNG-Ausgabe
+        output_dir: Verzeichnis für Ausgabedateien
+
+    Returns:
+        Dict mit Ergebnisinformationen
+    """
+    prompt = create_mindmap_prompt(text)
+    result = test_ollama_model(model, prompt)
+
+    if result["valid_graphviz"] and result["extracted_dot_code"]:
+        os.makedirs(output_dir, exist_ok=True)
+
+        if output_path is None:
+            safe_model = model.replace(":", "_").replace("/", "_")
+            output_path = os.path.join(output_dir, f"mindmap_{safe_model}.png")
+
+        dot_path = output_path.replace('.png', '.dot')
+
+        # Speichere DOT
+        save_dot_file(result["extracted_dot_code"], dot_path)
+        result["dot_path"] = dot_path
+
+        # Rendere PNG
+        render_result = render_dot_to_png(
+            result["extracted_dot_code"],
+            output_path,
+            validate_first=False
+        )
+        result["png_path"] = output_path if render_result.success else None
+        result["render_message"] = render_result.message
+
+    return result
 
 
 def test_multiple_models(
@@ -514,8 +869,21 @@ Beispiele:
   # Erstelle Beispiel-Graph
   python graphviz_tool.py example --output example.png
 
-  # Teste Ollama-Modelle
-  python graphviz_tool.py test-models llama2 mistral codellama --prompt "Create a flowchart for login process"
+  # Liste verfügbare Ollama-Modelle
+  python graphviz_tool.py list-models
+
+  # Teste Ollama-Modelle (interaktiv)
+  python graphviz_tool.py test-models --interactive --prompt "Create a graph"
+
+  # Teste alle Ollama-Modelle
+  python graphviz_tool.py test-models --all --prompt "Create a graph"
+
+  # Teste spezifische Modelle
+  python graphviz_tool.py test-models llama2 mistral --prompt "Create a graph"
+
+  # Erstelle Mindmap aus Text
+  python graphviz_tool.py mindmap --model llama2 --text "Ihr Text hier..."
+  python graphviz_tool.py mindmap --model llama2 --file input.txt
 '''
     )
 
@@ -536,11 +904,24 @@ Beispiele:
     example_parser.add_argument('--output', '-o', default='example.png', help='Ausgabe-PNG-Datei')
     example_parser.add_argument('--dot-output', help='Speichere auch DOT-Datei')
 
+    # List models command
+    list_parser = subparsers.add_parser('list-models', help='Liste verfügbare Ollama-Modelle')
+
     # Test models command
-    test_parser = subparsers.add_parser('test-models', help='Teste Ollama-Modelle')
-    test_parser.add_argument('models', nargs='+', help='Zu testende Modelle')
+    test_parser = subparsers.add_parser('test-models', help='Teste Ollama-Modelle auf Graphviz-Generierung')
+    test_parser.add_argument('models', nargs='*', help='Zu testende Modelle (optional bei --all oder --interactive)')
     test_parser.add_argument('--prompt', '-p', required=True, help='Prompt für die Modelle')
     test_parser.add_argument('--output-dir', '-o', default='./model_tests', help='Ausgabeverzeichnis')
+    test_parser.add_argument('--all', '-a', action='store_true', help='Teste alle verfügbaren Modelle')
+    test_parser.add_argument('--interactive', '-i', action='store_true', help='Interaktive Modellauswahl')
+
+    # Mindmap command
+    mindmap_parser = subparsers.add_parser('mindmap', help='Erstelle Mindmap aus Text')
+    mindmap_parser.add_argument('--model', '-m', help='Ollama-Modell (interaktiv wenn nicht angegeben)')
+    mindmap_parser.add_argument('--text', '-t', help='Text für die Mindmap')
+    mindmap_parser.add_argument('--file', '-f', help='Textdatei für die Mindmap')
+    mindmap_parser.add_argument('--output', '-o', help='Ausgabe-PNG-Datei')
+    mindmap_parser.add_argument('--output-dir', default='./mindmaps', help='Ausgabeverzeichnis')
 
     # Flowchart command
     flow_parser = subparsers.add_parser('flowchart', help='Erstelle Flowchart aus Schritten')
@@ -603,8 +984,36 @@ Beispiele:
         print(result.message)
         sys.exit(0 if result.success else 1)
 
+    elif args.command == 'list-models':
+        print_available_models()
+
     elif args.command == 'test-models':
-        results = test_multiple_models(args.models, args.prompt, args.output_dir)
+        # Bestimme welche Modelle getestet werden sollen
+        models_to_test = []
+
+        if args.all:
+            models_to_test = get_model_names()
+            if not models_to_test:
+                print("Keine Ollama-Modelle gefunden.")
+                sys.exit(1)
+            print(f"Teste alle {len(models_to_test)} verfügbaren Modelle...")
+
+        elif args.interactive:
+            models_to_test = select_models_interactive()
+            if not models_to_test:
+                print("Keine Modelle ausgewählt.")
+                sys.exit(0)
+
+        elif args.models:
+            models_to_test = args.models
+
+        else:
+            print("Fehler: Bitte Modelle angeben, --all oder --interactive verwenden.")
+            sys.exit(1)
+
+        print(f"\nAusgewählte Modelle: {', '.join(models_to_test)}")
+
+        results = test_multiple_models(models_to_test, args.prompt, args.output_dir)
         print_model_comparison(results)
 
         # Speichere Ergebnisse als JSON
@@ -612,6 +1021,72 @@ Beispiele:
         with open(json_path, 'w') as f:
             json.dump(results, f, indent=2, default=str)
         print(f"Ergebnisse gespeichert: {json_path}")
+
+    elif args.command == 'mindmap':
+        # Text ermitteln
+        if args.text:
+            text = args.text
+        elif args.file:
+            with open(args.file, 'r') as f:
+                text = f.read()
+        else:
+            print("Text für Mindmap eingeben (beenden mit Ctrl+D oder leerer Zeile):")
+            lines = []
+            try:
+                while True:
+                    line = input()
+                    if line == '':
+                        break
+                    lines.append(line)
+            except EOFError:
+                pass
+            text = '\n'.join(lines)
+
+        if not text.strip():
+            print("Fehler: Kein Text angegeben.")
+            sys.exit(1)
+
+        # Modell ermitteln
+        model = args.model
+        if not model:
+            print("\nKein Modell angegeben. Bitte wählen:")
+            selected = select_models_interactive()
+            if not selected:
+                print("Kein Modell ausgewählt.")
+                sys.exit(0)
+            model = selected[0]
+
+        print(f"\nGeneriere Mindmap mit Modell: {model}")
+        print(f"Textlänge: {len(text)} Zeichen")
+
+        result = generate_mindmap(
+            text=text,
+            model=model,
+            output_path=args.output,
+            output_dir=args.output_dir
+        )
+
+        if result["valid_graphviz"]:
+            print(f"\n✓ Mindmap erfolgreich erstellt!")
+            if result.get("png_path"):
+                print(f"  PNG: {result['png_path']}")
+            if result.get("dot_path"):
+                print(f"  DOT: {result['dot_path']}")
+        else:
+            print(f"\n✗ Mindmap-Generierung fehlgeschlagen")
+            if result.get("error"):
+                print(f"  Fehler: {result['error']}")
+            if result.get("validation_errors"):
+                print("  Validierungsfehler:")
+                for err in result["validation_errors"][:5]:
+                    print(f"    - {err}")
+
+            # Zeige rohe Antwort für Debugging
+            if result.get("response"):
+                print("\n  Rohe Modell-Antwort (erste 500 Zeichen):")
+                print(f"  {result['response'][:500]}...")
+
+        sys.exit(0 if result["valid_graphviz"] else 1)
 
     elif args.command == 'flowchart':
         dot_code = create_flowchart(args.steps, args.title)
