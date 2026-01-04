@@ -1,0 +1,16 @@
+{
+  "$schema": "https://code.claude.com/schemas/settings.json",
+  "_comment": "Local settings - DO NOT COMMIT. Add to .gitignore",
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "echo 'Local dev environment ready'"
+      }
+    ]
+  },
+  "env": {
+    "DEBUG": "true",
+    "LOG_LEVEL": "debug"
+  }
+}

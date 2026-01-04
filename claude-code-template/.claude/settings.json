@@ -1,0 +1,50 @@
+{
+  "$schema": "https://code.claude.com/schemas/settings.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "echo '=== Session Context ===' && git status --short 2>/dev/null || true && echo '---' && cat TODO.md 2>/dev/null || echo 'No TODO.md found'"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Bash command will be executed'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'File modified - consider running tests'"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(uv run *)",
+      "Bash(npm run *)",
+      "Bash(pytest *)",
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)"
+    ]
+  }
+}

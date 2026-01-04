@@ -1,0 +1,10 @@
+# Claude Code local settings - DO NOT COMMIT
+.claude/settings.local.json
+
+# Session files
+.claude/sessions/
+
+# Generated outputs
+mindmaps/
+model_tests/
+*.generated.md
