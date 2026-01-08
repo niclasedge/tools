@@ -9,6 +9,7 @@ nav:
       - DotViz Generator: dotviz-generator-README.md
       - Agent Framework Comparison: agent_framework_comparison.md
 
+  - Changelog: CHANGELOG-diff.md
 theme:
   name: material
   palette:
