@@ -21,4 +21,4 @@ metadata:
 spec:
   type: library
   lifecycle: experimental
-  owner: niclasedge
+  owner: user:niclasedge
