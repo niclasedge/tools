@@ -1,7 +1,33 @@
 # Changelog - Commit Details
 
 > Automatisch generiert aus Git-Historie
-> Letzte Aktualisierung: 2026-01-08 19:02:30 UTC
+> Letzte Aktualisierung: 2026-01-08 22:44:00 UTC
+
+---
+
+## 2026-01-08 23:43
+**Commit:** `db47681e`
+**Autor:** niclasedge
+**Nachricht:** Add Claude Code workflows
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+| `.github/workflows/claude-agent.yml` | +197 |
+| `.github/workflows/claude-oauth-login.yml` | +21 |
+| `.github/workflows/claude-token-check.yml` | +68 |
+
+---
+
+## 2026-01-08 19:02
+**Commit:** `c69e520f`
+**Autor:** github-actions[bot]
+**Nachricht:** docs: Update CHANGELOG-diff.md [skip ci]
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+| `docs/CHANGELOG-diff.md` | +25 -1 |
 
 ---
 
