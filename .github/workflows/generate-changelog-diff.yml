@@ -1,0 +1,89 @@
+name: Generate Changelog Diff
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - 'docs/CHANGELOG-diff.md'
+  workflow_dispatch:
+
+jobs:
+  generate-changelog:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate CHANGELOG-diff.md
+        run: |
+          mkdir -p docs
+
+          cat > docs/CHANGELOG-diff.md << 'HEADER'
+          # Changelog - Commit Details
+
+          > Automatisch generiert aus Git-Historie
+          > Letzte Aktualisierung: TIMESTAMP
+
+          ---
+
+          HEADER
+
+          sed -i "s/TIMESTAMP/$(date '+%Y-%m-%d %H:%M:%S UTC')/g" docs/CHANGELOG-diff.md
+
+          COMMIT_COUNT=50
+
+          git log --pretty=format:"%H|%ad|%s|%an" --date=format:'%Y-%m-%d %H:%M' -n $COMMIT_COUNT | while IFS='|' read -r hash date message author; do
+
+            echo "## $date" >> docs/CHANGELOG-diff.md
+            echo "**Commit:** \`${hash:0:8}\`" >> docs/CHANGELOG-diff.md
+            echo "**Autor:** $author" >> docs/CHANGELOG-diff.md
+            echo "**Nachricht:** $message" >> docs/CHANGELOG-diff.md
+            echo "" >> docs/CHANGELOG-diff.md
+            echo "### Geänderte Dateien" >> docs/CHANGELOG-diff.md
+            echo "| Datei | Änderungen |" >> docs/CHANGELOG-diff.md
+            echo "|-------|------------|" >> docs/CHANGELOG-diff.md
+
+            git diff-tree --no-commit-id --numstat -r "$hash" 2>/dev/null | while read -r added deleted file; do
+              if [ -n "$file" ]; then
+                if [ "$added" = "-" ]; then
+                  changes="(binär)"
+                else
+                  changes=""
+                  [ "$added" != "0" ] && changes="+$added"
+                  [ "$deleted" != "0" ] && changes="$changes -$deleted"
+                  [ -z "$changes" ] && changes="±0"
+                fi
+                echo "| \`$file\` | $changes |" >> docs/CHANGELOG-diff.md
+              fi
+            done
+
+            echo "" >> docs/CHANGELOG-diff.md
+            echo "---" >> docs/CHANGELOG-diff.md
+            echo "" >> docs/CHANGELOG-diff.md
+
+          done
+
+          echo "CHANGELOG-diff.md generiert"
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add docs/CHANGELOG-diff.md
+
+          # Check if there are staged changes
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen am Changelog"
+          else
+            git commit -m "docs: Update CHANGELOG-diff.md [skip ci]"
+            git push
+          fi
