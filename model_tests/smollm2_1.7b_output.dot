@@ -1,0 +1,14 @@
+digraph software_development {
+  graph [rankdir=TB];
+
+  start;
+  Requirements -> Design;
+  Design -> Implementation;
+  Implementation -> Testing;
+  Testing -> Deployment;
+  Testing -> Maintenance;
+  Testing -> FeedbackLoop;
+
+  diamond [label="Bugs Found"];
+  Testing -> FeedbackLoop;
+}

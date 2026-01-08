@@ -1,0 +1,74 @@
+digraph YouTubePipeline {
+    rankdir=LR;
+    node [shape=box, style="filled,rounded", fontname="Arial", fontsize=10];
+    edge [fontname="Arial", fontsize=9];
+
+    subgraph cluster_sources {
+        label="Data Sources";
+        style=filled; fillcolor="#E3F2FD";
+        YouTubeAPI [label="YouTube API", shape=cylinder, fillcolor="#FF6B6B"];
+        ConfigYAML [label="channels.yaml", shape=note, fillcolor="#FFF9C4"];
+        EnvFile [label="env credentials", shape=note, fillcolor="#FFCDD2"];
+    }
+
+    subgraph cluster_import {
+        label="Phase 1: Import";
+        style=filled; fillcolor="#E8F5E9";
+        LoadChannels [label="load_channels()", fillcolor="#A5D6A7"];
+        ImportVideos [label="import_all_channels()", fillcolor="#81C784"];
+    }
+
+    subgraph cluster_db {
+        label="Database";
+        style=filled; fillcolor="#F3E5F5";
+        SQLiteDB [label="SQLite DB", shape=cylinder, fillcolor="#CE93D8"];
+    }
+
+    subgraph cluster_process {
+        label="Phase 2: Processing";
+        style=filled; fillcolor="#FFF3E0";
+        GetTranscript [label="get_transcript()", fillcolor="#FFCC80"];
+        GenerateSummary [label="generate_summary()\nOllama LLM", fillcolor="#FFB74D"];
+        FormatHTML [label="format_summary_html()", fillcolor="#FFA726"];
+        ExportMarkdown [label="export_to_markdown()", fillcolor="#FF9800"];
+    }
+
+    subgraph cluster_export {
+        label="Phase 3: Export";
+        style=filled; fillcolor="#E0F7FA";
+        ExportGhost [label="export_to_ghost()", fillcolor="#80DEEA"];
+    }
+
+    subgraph cluster_output {
+        label="Outputs";
+        style=filled; fillcolor="#ECEFF1";
+        ObsidianVault [label="Obsidian Vault", shape=folder, fillcolor="#90A4AE"];
+        GhostBlog [label="Ghost Blog", shape=tab, fillcolor="#78909C"];
+    }
+
+    subgraph cluster_monitor {
+        label="Monitoring";
+        style=filled; fillcolor="#FCE4EC";
+        HealthCheck [label="healthchecks.io", shape=ellipse, fillcolor="#F48FB1"];
+        Notify [label="Notifications", shape=ellipse, fillcolor="#F06292"];
+    }
+
+    ConfigYAML -> LoadChannels;
+    EnvFile -> ImportVideos [style=dashed];
+    YouTubeAPI -> ImportVideos [color=red, penwidth=2];
+    LoadChannels -> ImportVideos;
+    ImportVideos -> SQLiteDB [label="store"];
+    ImportVideos -> Notify [label="new videos", style=dashed];
+    ImportVideos -> HealthCheck [style=dashed];
+
+    SQLiteDB -> GetTranscript;
+    GetTranscript -> GenerateSummary;
+    GenerateSummary -> FormatHTML;
+    FormatHTML -> SQLiteDB [label="save"];
+    SQLiteDB -> ExportMarkdown;
+    ExportMarkdown -> ObsidianVault;
+
+    SQLiteDB -> ExportGhost;
+    ExportGhost -> GhostBlog;
+    ExportGhost -> HealthCheck [style=dashed];
+}

@@ -1,0 +1,24 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tools
+  description: Collection of utility tools, scripts, and agents for development workflows
+  annotations:
+    github.com/project-slug: niclasedge/tools
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - python
+    - utilities
+    - agents
+    - automation
+    - development-tools
+    - diagrams
+    - benchmarking
+  links:
+    - url: https://github.com/simonw/tools
+      title: Inspired by Simon Willison's tools
+      icon: web
+spec:
+  type: library
+  lifecycle: experimental
+  owner: niclasedge

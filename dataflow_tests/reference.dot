@@ -1,0 +1,149 @@
+digraph YouTubeSummaryPipeline {
+    // Global Settings
+    rankdir=TB;
+    splines=ortho;
+    nodesep=0.6;
+    ranksep=0.8;
+    fontname="Arial";
+    fontsize=11;
+
+    // Default styles
+    node [shape=box, style="rounded,filled", fontname="Arial", fontsize=10];
+    edge [fontname="Arial", fontsize=9, color=gray40];
+
+    // ============ Data Sources ============
+    subgraph cluster_sources {
+        label="Datenquellen";
+        style=filled;
+        fillcolor="#E3F2FD";
+        fontsize=11;
+        fontname="Arial Bold";
+
+        YouTube [label="YouTube API", shape=cylinder, fillcolor="#FF0000", fontcolor=white];
+        Config [label="config/\nchannels.yaml", shape=note, fillcolor="#FFF9C4"];
+        ENV [label=".env\nCredentials", shape=note, fillcolor="#FFCDD2"];
+    }
+
+    // ============ Phase 1: Import ============
+    subgraph cluster_import {
+        label="Phase 1: Video Import";
+        style=filled;
+        fillcolor="#E8F5E9";
+        fontsize=11;
+        fontname="Arial Bold";
+
+        LoadChannels [label="load_channels()", fillcolor="#A5D6A7"];
+        ImportVideos [label="import_all_channels()", fillcolor="#81C784"];
+        CheckNew [label="Neue Videos?", shape=diamond, fillcolor="#FFEB3B"];
+    }
+
+    // ============ Database ============
+    subgraph cluster_database {
+        label="SQLite Datenbank";
+        style=filled;
+        fillcolor="#F3E5F5";
+        fontsize=11;
+        fontname="Arial Bold";
+
+        DB [label="videos.db", shape=cylinder, fillcolor="#CE93D8"];
+        VideosTable [label="videos\n(url, title, channel)", shape=box3d, fillcolor="#E1BEE7"];
+        TranscriptsCol [label="transcript\ncolumn", shape=box3d, fillcolor="#E1BEE7"];
+        SummariesCol [label="summary\ncolumn", shape=box3d, fillcolor="#E1BEE7"];
+    }
+
+    // ============ Phase 2: Processing ============
+    subgraph cluster_processing {
+        label="Phase 2: Video Processing (per video)";
+        style=filled;
+        fillcolor="#FFF3E0";
+        fontsize=11;
+        fontname="Arial Bold";
+
+        GetTranscript [label="get_transcript()\nYouTube Transcript API", fillcolor="#FFCC80"];
+        HasTranscript [label="Transcript\nvorhanden?", shape=diamond, fillcolor="#FFEB3B"];
+        GenerateSummary [label="generate_summary()\nOllama LLM", fillcolor="#FFB74D"];
+        FormatHTML [label="format_summary_html()", fillcolor="#FFA726"];
+        ExportMD [label="export_to_markdown()\nObsidian", fillcolor="#FF9800"];
+    }
+
+    // ============ Phase 3: Export ============
+    subgraph cluster_export {
+        label="Phase 3: Ghost Export";
+        style=filled;
+        fillcolor="#E0F7FA";
+        fontsize=11;
+        fontname="Arial Bold";
+
+        ExportGhost [label="export_to_ghost()\nGhost API", fillcolor="#80DEEA"];
+        CreatePost [label="Create/Update\nBlog Post", fillcolor="#4DD0E1"];
+    }
+
+    // ============ Outputs ============
+    subgraph cluster_outputs {
+        label="Ausgaben";
+        style=filled;
+        fillcolor="#ECEFF1";
+        fontsize=11;
+        fontname="Arial Bold";
+
+        MDFiles [label="Markdown Files\n(Obsidian Vault)", shape=folder, fillcolor="#90A4AE"];
+        GhostBlog [label="Ghost Blog\nPosts", shape=tab, fillcolor="#78909C"];
+        Logs [label="logs/\nSession Logs", shape=note, fillcolor="#B0BEC5"];
+    }
+
+    // ============ Monitoring ============
+    subgraph cluster_monitoring {
+        label="Monitoring & Notifications";
+        style=filled;
+        fillcolor="#FCE4EC";
+        fontsize=11;
+        fontname="Arial Bold";
+
+        HealthCheck [label="healthchecks.io\nPings", shape=ellipse, fillcolor="#F48FB1"];
+        Notifications [label="notify()\n(new videos, errors)", shape=ellipse, fillcolor="#F06292"];
+    }
+
+    // ============ Edges ============
+
+    // Data Sources -> Import
+    Config -> LoadChannels [xlabel="channel list"];
+    YouTube -> ImportVideos [xlabel="API calls", penwidth=2, color="#FF0000"];
+    LoadChannels -> ImportVideos;
+
+    // Import -> Database
+    ImportVideos -> CheckNew;
+    CheckNew -> VideosTable [xlabel="ja", color=green];
+    CheckNew -> Notifications [xlabel="notify", style=dashed];
+
+    // Database structure
+    DB -> VideosTable [style=dotted, arrowhead=none];
+    VideosTable -> TranscriptsCol [style=dotted, arrowhead=none];
+    VideosTable -> SummariesCol [style=dotted, arrowhead=none];
+
+    // Processing Flow
+    VideosTable -> GetTranscript [xlabel="videos\nwithout transcript", penwidth=1.5];
+    GetTranscript -> HasTranscript;
+    HasTranscript -> TranscriptsCol [xlabel="ja", color=green];
+    HasTranscript -> GenerateSummary [xlabel="nein\n(skip)", style=dashed, color=red];
+
+    TranscriptsCol -> GenerateSummary [xlabel="transcript text", penwidth=1.5];
+    GenerateSummary -> FormatHTML;
+    FormatHTML -> SummariesCol [xlabel="HTML summary", color=blue];
+
+    SummariesCol -> ExportMD [penwidth=1.5];
+    ExportMD -> MDFiles [xlabel="write files", color=green];
+
+    // Ghost Export
+    SummariesCol -> ExportGhost [xlabel="summaries\nlast 7 days", penwidth=1.5];
+    ExportGhost -> CreatePost;
+    CreatePost -> GhostBlog [xlabel="API POST", color=blue];
+
+    // Monitoring
+    ImportVideos -> HealthCheck [style=dashed, color=gray];
+    ExportGhost -> HealthCheck [style=dashed, color=gray];
+    GenerateSummary -> Logs [style=dashed, color=gray];
+
+    // Environment
+    ENV -> ImportVideos [style=dotted, xlabel="API keys"];
+    ENV -> ExportGhost [style=dotted, xlabel="Ghost JWT"];
+}

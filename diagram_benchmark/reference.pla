@@ -1,0 +1,58 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+title YouTube Summary Pipeline
+
+package "Data Sources" #E3F2FD {
+    [YouTube API] as YT #FF6B6B
+    [channels.yaml] as Config #FFF9C4
+    [env credentials] as Env #FFCDD2
+}
+
+package "Phase 1: Import" #E8F5E9 {
+    [load_channels()] as Load
+    [import_all_channels()] as Import
+}
+
+database "SQLite DB" as DB #F3E5F5
+
+package "Phase 2: Processing" #FFF3E0 {
+    [get_transcript()] as Transcript
+    [generate_summary()] as Summary
+    [format_summary_html()] as Format
+    [export_to_markdown()] as ExportMD
+}
+
+package "Phase 3: Export" #E0F7FA {
+    [export_to_ghost()] as Ghost
+}
+
+cloud "Outputs" #ECEFF1 {
+    [Obsidian Vault] as Obsidian
+    [Ghost Blog] as Blog
+}
+
+package "Monitoring" #FCE4EC {
+    [healthchecks.io] as Health
+    [Notifications] as Notify
+}
+
+Config --> Load
+Env ..> Import
+YT --> Import
+Load --> Import
+Import --> DB : store
+Import ..> Notify : new videos
+Import ..> Health
+
+DB --> Transcript
+Transcript --> Summary
+Summary --> Format
+Format --> DB : save
+DB --> ExportMD
+ExportMD --> Obsidian
+
+DB --> Ghost
+Ghost --> Blog
+Ghost ..> Health
+@enduml

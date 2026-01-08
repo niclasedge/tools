@@ -1,0 +1,57 @@
+digraph PipelineName {
+    // Data Sources
+    YouTubeAPI [shape=box, style=filled, fillcolor=lightblue, label="YouTubeAPI"];
+    ConfigFile [shape=box, style=filled, fillcolor=lightgreen, label="ConfigFile"];
+    EnvFile [shape=box, style=filled, fillcolor=lightyellow, label="EnvFile"];
+    
+    // Phase 1 Import
+    subgraph cluster_import {
+        label="Phase 1 Import";
+        LoadChannels [shape=box, style=filled, fillcolor=orange, label="LoadChannels()"];
+        ImportVideos [shape=box, style=filled, fillcolor=orange, label="ImportVideos()"];
+        SQLiteDB [shape=cylinder, style=filled, fillcolor=lightgray, label="SQLiteDB"];
+    }
+    
+    // Phase 2 Process
+    subgraph cluster_process {
+        label="Phase 2 Process";
+        GetTranscript [shape=box, style=filled, fillcolor=purple, label="GetTranscript()"];
+        GenerateSummary [shape=box, style=filled, fillcolor=purple, label="GenerateSummary()"];
+        FormatHTML [shape=box, style=filled, fillcolor=purple, label="FormatHTML()"];
+        ExportMarkdown [shape=box, style=filled, fillcolor=purple, label="ExportMarkdown()"];
+        ObsidianVault [shape=folder, style=filled, fillcolor=lightpink, label="ObsidianVault"];
+    }
+    
+    // Phase 3 Export
+    subgraph cluster_export {
+        label="Phase 3 Export";
+        ExportGhost [shape=box, style=filled, fillcolor=purple, label="ExportGhost()"];
+        GhostBlog [shape=folder, style=filled, fillcolor=lightpink, label="GhostBlog"];
+    }
+    
+    // Monitoring
+    subgraph cluster_monitoring {
+        label="Monitoring";
+        HealthCheck [shape=box, style=filled, fillcolor=lightcoral, label="HealthCheck()"];
+        Notifications [shape=box, style=filled, fillcolor=lightcoral, label="Notifications()"];
+    }
+    
+    // Edges
+    YouTubeAPI -> LoadChannels;
+    ConfigFile -> LoadChannels;
+    EnvFile -> LoadChannels;
+    LoadChannels -> ImportVideos;
+    ImportVideos -> SQLiteDB;
+    
+    GetTranscript -> GenerateSummary;
+    GenerateSummary -> FormatHTML;
+    FormatHTML -> ExportMarkdown;
+    ExportMarkdown -> ObsidianVault;
+    
+    ExportGhost -> GhostBlog;
+    
+    SQLiteDB -> HealthCheck;
+    ObsidianVault -> HealthCheck;
+    GhostBlog -> HealthCheck;
+    HealthCheck -> Notifications;
+}

@@ -1,0 +1,23 @@
+@startuml
+package DataPipeline {
+  [YouTube API] --> [load_channels()]
+  [load_channels()] --> [channels.yaml]
+  [channels.yaml] --> [SQLite DB]
+  [SQLite DB] --> [get_transcript()]
+  [get_transcript()] --> [generate_summary()]
+  [generate_summary()] --> [format_summary_html()]
+  [format_summary_html()] --> [export_to_markdown()]
+  [export_to_markdown()] --> [Obsidian]
+  [export_to_markdown()] --> [export_to_ghost()]
+  [export_to_ghost()] --> [Ghost Blog]
+
+  [SQLite DB] ..> healthchecks.io
+  [get_transcript()] ..> healthchecks.io
+  [generate_summary()] ..> healthchecks.io
+  [format_summary_html()] ..> healthchecks.io
+
+  [YouTube API] ..> Notifications
+  [Obsidian] ..> Notifications
+  [Ghost Blog] ..> Notifications
+}
+@enduml

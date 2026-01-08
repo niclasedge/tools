@@ -1,0 +1,25 @@
+digraph SoftwareDevelopmentProcess {
+    rankdir=LR;
+    
+    // Nodes
+    Start [shape=ellipse, label="Requirements"];
+    Design [shape=box, label="Design"];
+    Implementation [shape=box, label="Implementation"];
+    Testing [shape=box, label="Testing"];
+    Deployment [shape=box, label="Deployment"];
+    Maintenance [shape=box, label="Maintenance"];
+    BugFound [shape=diamond, label="Bugs Found?"];
+    
+    // Edges
+    Start -> Design;
+    Design -> Implementation;
+    Implementation -> Testing;
+    Testing -> BugFound;
+    BugFound -> Implementation [label="Yes", constraint=false];
+    BugFound -> Deployment [label="No"];
+    Deployment -> Maintenance;
+    
+    // Feedback loop
+    Implementation -> Testing [style=invis, constraint=false];
+    Testing -> Implementation [style=invis, constraint=false];
+}

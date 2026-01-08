@@ -1,0 +1,18 @@
+digraph G {
+    node [shape=box];
+    Requirements [shape=ellipse];
+    Design;
+    Implementation;
+    Testing;
+    Decision [shape=diamond];
+    Deployment;
+    Maintenance [shape=ellipse];
+
+    Requirements -> Design;
+    Design -> Implementation;
+    Implementation -> Testing;
+    Testing -> Decision;
+    Decision -> Implementation [label="Yes"];
+    Decision -> Deployment [label="No"];
+    Deployment -> Maintenance;
+}

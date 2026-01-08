@@ -1,0 +1,18 @@
+digraph G {
+    node [fontname="Helvetica"];
+    Requirements [shape=ellipse];
+    Design [shape=box];
+    Implementation [shape=box];
+    Testing [shape=box];
+    BugsFound [shape=diamond, label="Bugs found?"];
+    Deployment [shape=box];
+    Maintenance [shape=ellipse];
+
+    Requirements -> Design;
+    Design -> Implementation;
+    Implementation -> Testing;
+    Testing -> BugsFound;
+    BugsFound -> Implementation [label="Yes"];
+    BugsFound -> Deployment [label="No"];
+    Deployment -> Maintenance;
+}

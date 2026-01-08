@@ -1,0 +1,95 @@
+@startuml YouTubeSummaryPipeline
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+
+title YouTube Summary Pipeline - Datenfluss
+
+' Styling
+skinparam rectangle {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+}
+skinparam database {
+    BackgroundColor #F3E5F5
+    BorderColor #7B1FA2
+}
+skinparam cloud {
+    BackgroundColor #E8F5E9
+    BorderColor #388E3C
+}
+
+' Data Sources
+package "Datenquellen" #E3F2FD {
+    [YouTube API] as YouTube #FF0000
+    [channels.yaml] as Config #FFF9C4
+    [.env Credentials] as ENV #FFCDD2
+}
+
+' Database
+database "SQLite DB" as DB #F3E5F5 {
+    [videos table] as Videos
+    [transcript] as Transcript
+    [summary] as Summary
+}
+
+' Phase 1: Import
+package "Phase 1: Import" #E8F5E9 {
+    [load_channels()] as LoadChannels
+    [import_all_channels()] as ImportVideos
+}
+
+' Phase 2: Processing
+package "Phase 2: Processing" #FFF3E0 {
+    [get_transcript()] as GetTranscript
+    [generate_summary()] as GenSummary
+    [format_summary_html()] as FormatHTML
+    [export_to_markdown()] as ExportMD
+}
+
+' Phase 3: Export
+package "Phase 3: Export" #E0F7FA {
+    [export_to_ghost()] as ExportGhost
+}
+
+' Outputs
+cloud "Ausgaben" #ECEFF1 {
+    [Markdown Files\n(Obsidian)] as MDFiles
+    [Ghost Blog] as GhostBlog
+    [Session Logs] as Logs
+}
+
+' Monitoring
+package "Monitoring" #FCE4EC {
+    [healthchecks.io] as Health
+    [Notifications] as Notify
+}
+
+' Relationships - Phase 1
+Config --> LoadChannels : channel list
+LoadChannels --> ImportVideos
+YouTube --> ImportVideos : API calls
+ImportVideos --> Videos : neue Videos
+ImportVideos --> Notify : new videos
+ImportVideos ..> Health : ping
+
+' Relationships - Phase 2
+Videos --> GetTranscript : videos without transcript
+GetTranscript --> Transcript : save transcript
+Transcript --> GenSummary : transcript text
+GenSummary --> FormatHTML
+FormatHTML --> Summary : HTML summary
+Summary --> ExportMD
+ExportMD --> MDFiles : write files
+GenSummary ..> Logs : log
+
+' Relationships - Phase 3
+Summary --> ExportGhost : last 7 days
+ExportGhost --> GhostBlog : API POST
+ExportGhost ..> Health : ping
+
+' Environment
+ENV ..> ImportVideos : API keys
+ENV ..> ExportGhost : Ghost JWT
+
+@enduml

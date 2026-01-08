@@ -1,0 +1,30 @@
+digraph {
+    rankdir=TB;
+    node [shape=ellipse];
+    Requirements [label="Requirements"];
+    node [shape=rectangle];
+    Design [label="Design"];
+    Implementation [label="Implementation"];
+    Testing [label="Testing"];
+    Deployment [label="Deployment"];
+    Maintenance [label="Maintenance"];
+    node [shape=diamond];
+    Testing_decision [label="Bugs found?\nNo|Yes"];
+    subgraph cluster_main {
+        label = "Software Development Process";
+        Requirements;
+        Design;
+        Implementation;
+        Testing;
+        Testing_decision;
+        Deployment;
+        Maintenance;
+        Requirements -> Design;
+        Design -> Implementation;
+        Implementation -> Testing;
+        Testing -> Testing_decision;
+        Testing_decision -> Deployment [label="No"];
+        Testing_decision -> Implementation [label="Yes"];
+        Deployment -> Maintenance;
+    }
+}

@@ -1,0 +1,21 @@
+digraph SDLC {
+    rankdir=LR;
+    node [shape = ellipse];
+    Requirements;
+    Design;
+    Implementation;
+    Testing;
+    Deployment;
+    Maintenance;
+
+    node [shape = box];
+    Requirements -> Design;
+    Design -> Implementation;
+    Implementation -> Testing;
+    Testing -> Deployment;
+    Deployment -> Maintenance;
+    Maintenance -> Implementation [arrowhead=empty];
+
+    node [shape = diamond];
+    Testing:BugsFound -> Implementation;
+}

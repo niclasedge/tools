@@ -1,0 +1,15 @@
+# Health Agent Dependencies
+
+# Web UI
+gradio>=4.0.0
+
+# API Client
+requests>=2.28.0
+python-dotenv>=1.0.0
+
+# AI/LLM
+litellm>=1.0.0
+google-adk>=0.1.0
+
+# Data handling
+pydantic>=2.0.0

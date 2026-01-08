@@ -1,0 +1,40 @@
+flowchart LR
+subgraph Sources["Sources"]
+YT[("YouTube API")]
+Config["channels.yaml"]
+Env["env credentials"]
+end
+
+subgraph Import["Import"]
+Load["load_channels()"]
+ImportFn["import_all_channels()"]
+end
+
+SQLite[("SQLite DB")]
+
+subgraph Process["Process"]
+Transcript["Transcript"]
+Summary["Summary"]
+Format["Format"]
+ExportMD["ExportMD"]
+end
+
+subgraph Export["Export"]
+Ghost["Ghost"]
+Blog["Blog"]
+end
+
+subgraph Monitor["Monitor"]
+Health["Health"]
+Notify["Notify"]
+end
+
+Obsidian["Obsidian"]
+
+Config --> Load --> ImportFn
+YT ==> ImportFn --> SQLite
+SQLite --> Transcript --> Summary --> Format --> SQLite
+SQLite --> ExportMD --> Obsidian
+SQLite --> Ghost --> Blog
+ImportFn -.-> Health
+Ghost -.-> Health

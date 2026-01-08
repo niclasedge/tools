@@ -1,0 +1,37 @@
+digraph flowchart {
+  rankdir=LR;
+  node [shape=box];
+
+  start [label="Requirements"];
+  design [label="Design"];
+  implementation [label="Implementation"];
+  testing [label="Testing"];
+  deployment [label="Deployment"];
+  maintenance [label="Maintenance"];
+
+  start -> design;
+  design -> implementation;
+  implementation -> testing;
+  testing -> implementation;
+
+  // Feedback loop
+  testing -> implementation [label="Bug Found"];
+  implementation -> testing [label="Feedback"];
+
+  // Add feedback loop
+  //  (This is a placeholder - actual implementation would be more complex)
+  //  Implementation -> testing [label="Feedback"];
+
+  // Add a feedback loop
+  //  (This is a placeholder - actual implementation would be more complex)
+  //  Testing -> implementation [label="Feedback"];
+
+  // Add a feedback loop
+  //  (This is a placeholder - actual implementation would be more complex)
+  //  Implementation -> testing [label="Feedback"];
+
+  // Add a feedback loop
+  //  (This is a placeholder - actual implementation would be more complex)
+  //  Testing -> implementation [label="Feedback"];
+
+}

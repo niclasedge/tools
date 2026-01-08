@@ -1,0 +1,68 @@
+digraph G {
+    rankdir=LR;
+    node [fontname=Helvetica, fontsize=10];
+
+    /* Data Sources */
+    youtube_api [label="YouTube API", shape=cylinder, style=filled, fillcolor=red];
+    channels_yaml [label="channels.yaml", shape=folder];
+    env_file [label=".env", shape=folder];
+
+    /* Phase 1 - IMPORT */
+    subgraph cluster_phase1 {
+        label="Phase 1 - IMPORT";
+        style=dashed;
+        load_channels [label="load_channels()", shape=box];
+        import_all_channels [label="import_all_channels()", shape=box];
+        sqlite_db [label="SQLite DB", shape=cylinder];
+
+        channels_yaml -> load_channels [label="config", color=blue];
+        env_file -> import_all_channels [label="API credentials", color=blue];
+        load_channels -> import_all_channels [color=green];
+        import_all_channels -> sqlite_db [label="new videos", color=blue];
+    }
+
+    /* Phase 2 - PROCESSING (per video) */
+    subgraph cluster_phase2 {
+        label="Phase 2 - PROCESSING (per video)";
+        style=dashed;
+        get_transcript [label="get_transcript()", shape=box];
+        generate_summary [label="generate_summary()", shape=box];
+        format_summary_html [label="format_summary_html()", shape=box];
+        export_to_markdown [label="export_to_markdown()", shape=box];
+
+        sqlite_db -> get_transcript [label="video data", color=blue];
+        get_transcript -> generate_summary [label="transcript", color=blue];
+        generate_summary -> format_summary_html [label="summary", color=blue];
+        format_summary_html -> export_to_markdown [label="HTML", color=blue];
+    }
+
+    /* Phase 3 - EXPORT */
+    subgraph cluster_phase3 {
+        label="Phase 3 - EXPORT";
+        style=dashed;
+        export_to_ghost [label="export_to_ghost()", shape=box];
+
+        export_to_markdown -> export_to_ghost [label="Markdown", color=blue];
+    }
+
+    /* Monitoring */
+    subgraph cluster_monitoring {
+        label="Monitoring";
+        style=dotted;
+        healthchecks [label="healthchecks.io", shape=ellipse];
+        notifications [label="Notifications", shape=box];
+        logging [label="Session Logging", shape=box];
+
+        import_all_channels -> healthchecks [label="ping", color=green];
+        export_to_ghost -> healthchecks [label="ping", color=green];
+        import_all_channels -> notifications [label="new video", color=green];
+
+        load_channels -> logging [label="log", color=green];
+        import_all_channels -> logging [label="log", color=green];
+        get_transcript -> logging [label="log", color=green];
+        generate_summary -> logging [label="log", color=green];
+        format_summary_html -> logging [label="log", color=green];
+        export_to_markdown -> logging [label="log", color=green];
+        export_to_ghost -> logging [label="log", color=green];
+    }
+}

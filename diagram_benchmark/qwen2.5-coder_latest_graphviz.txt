@@ -1,0 +1,43 @@
+digraph PipelineName {
+    node [shape=box, style=filled];
+    edge [arrowhead=normal];
+
+    subgraph cluster_import {
+        label="Phase 1: Import";
+        node [fillcolor=lightblue];
+        YouTubeAPI -> LoadChannels;
+        ConfigFile -> ImportVideos;
+        EnvFile -> ImportVideos;
+        LoadChannels -> SQLiteDB;
+        ImportVideos -> SQLiteDB;
+    }
+
+    subgraph cluster_process {
+        label="Phase 2: Process";
+        node [fillcolor=lightgreen];
+        SQLiteDB -> GetTranscript;
+        GetTranscript -> GenerateSummary;
+        GenerateSummary -> FormatHTML;
+        FormatHTML -> ExportMarkdown;
+        ExportMarkdown -> ObsidianVault;
+    }
+
+    subgraph cluster_export {
+        label="Phase 3: Export";
+        node [shape=folder, fillcolor=lightyellow];
+        SQLiteDB -> ExportGhost;
+        ExportGhost -> GhostBlog;
+    }
+
+    node [fillcolor=orange];
+    HealthCheck -> Monitoring;
+    Notifications -> Monitoring;
+
+    HealthCheck -> ExportGhost;
+    HealthCheck -> ExportMarkdown;
+    HealthCheck -> GetTranscript;
+    HealthCheck -> ImportVideos;
+    HealthCheck -> LoadChannels;
+    HealthCheck -> GenerateSummary;
+    HealthCheck -> FormatHTML;
+}

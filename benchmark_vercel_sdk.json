@@ -1,0 +1,131 @@
+{
+  "timestamp": "2026-01-08T09:12:28.971Z",
+  "sdk": "Vercel AI SDK",
+  "quickMode": {
+    "successRate": 0.8,
+    "avgDurationMs": 19000.6,
+    "results": [
+      {
+        "name": "Simple Pipeline",
+        "description": "A data pipeline: Input -> Validate -> Process -> Output",
+        "format": "graphviz",
+        "success": true,
+        "durationMs": 85595,
+        "codeLength": 230,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "Microservices",
+        "description": "Microservices: API Gateway connects to User Service, Order Service, Payment Service. All connect to PostgreSQL.",
+        "format": "graphviz",
+        "success": true,
+        "durationMs": 2345,
+        "codeLength": 459,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "Login Flow",
+        "description": "User login: Start -> Enter credentials -> Validate -> If valid go to Dashboard else Error -> End",
+        "format": "mermaid",
+        "success": false,
+        "durationMs": 1265,
+        "codeLength": 163,
+        "valid": false,
+        "errors": [
+          "Unbalanced subgraph/end: 0 subgraph vs 1 end"
+        ],
+        "iterations": 0
+      },
+      {
+        "name": "Web Architecture",
+        "description": "Web app: Browser -> Load Balancer -> 3 Web Servers -> Redis Cache -> PostgreSQL -> Backup",
+        "format": "graphviz",
+        "success": true,
+        "durationMs": 3329,
+        "codeLength": 622,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "CI/CD Pipeline",
+        "description": "CI/CD: Code Push -> Build -> Test -> Deploy to Staging -> E2E Tests -> Deploy to Production",
+        "format": "graphviz",
+        "success": true,
+        "durationMs": 2469,
+        "codeLength": 410,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      }
+    ]
+  },
+  "fullPipeline": {
+    "successRate": 0.8,
+    "avgDurationMs": 3232.4,
+    "avgIterations": 0.6,
+    "results": [
+      {
+        "name": "Simple Pipeline",
+        "description": "A data pipeline: Input -> Validate -> Process -> Output",
+        "format": "graphviz",
+        "success": true,
+        "durationMs": 1963,
+        "codeLength": 262,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "Microservices",
+        "description": "Microservices: API Gateway connects to User Service, Order Service, Payment Service. All connect to PostgreSQL.",
+        "format": "graphviz",
+        "success": true,
+        "durationMs": 2554,
+        "codeLength": 475,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "Login Flow",
+        "description": "User login: Start -> Enter credentials -> Validate -> If valid go to Dashboard else Error -> End",
+        "format": "mermaid",
+        "success": false,
+        "durationMs": 5205,
+        "codeLength": 242,
+        "valid": false,
+        "errors": [
+          "Unbalanced subgraph/end: 0 subgraph vs 3 end"
+        ],
+        "iterations": 3
+      },
+      {
+        "name": "Web Architecture",
+        "description": "Web app: Browser -> Load Balancer -> 3 Web Servers -> Redis Cache -> PostgreSQL -> Backup",
+        "format": "graphviz",
+        "success": true,
+        "durationMs": 3771,
+        "codeLength": 681,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "CI/CD Pipeline",
+        "description": "CI/CD: Code Push -> Build -> Test -> Deploy to Staging -> E2E Tests -> Deploy to Production",
+        "format": "graphviz",
+        "success": true,
+        "durationMs": 2669,
+        "codeLength": 428,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      }
+    ]
+  }
+}

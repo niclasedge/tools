@@ -1,0 +1,77 @@
+digraph G {
+    rankdir=TB;
+    node [shape=cylinder];
+
+    subgraph cluster_0 {
+        label="Data Sources";
+        youtube_api [label="YouTube API", color=red];
+        channels_yaml [label="channels.yaml", shape=folder];
+        env_file [label=".env", shape=folder];
+    }
+
+    load_channels [label="load_channels()", shape=diamond];
+    import_all_channels [label="import_all_channels()"];
+    db_store [label="SQLite DB"];
+
+    subgraph cluster_1 {
+        label="Phase 1 - IMPORT";
+        load_channels -> import_all_channels;
+        import_all_channels -> db_store;
+    }
+
+    get_transcript [label="get_transcript()", shape=diamond];
+    generate_summary [label="generate_summary()"];
+    format_summary_html [label="format_summary_html()"];
+    export_to_markdown [label="export_to_markdown()"];
+
+    subgraph cluster_2 {
+        label="Phase 2 - PROCESSING";
+        get_transcript -> generate_summary;
+        generate_summary -> format_summary_html;
+        format_summary_html -> export_to_markdown;
+    }
+
+    export_to_ghost [label="export_to_ghost()", shape=diamond];
+
+    subgraph cluster_3 {
+        label="Phase 3 - EXPORT";
+        export_to_ghost;
+    }
+
+    db_store -> load_channels;
+
+    edge [label="API Credentials"];
+    youtube_api -> env_file;
+
+    edge [label="Channel List"];
+    channels_yaml -> import_all_channels;
+
+    edge [label="Transcript"];
+    get_transcript -> generate_summary;
+
+    edge [label="Summary"];
+    generate_summary -> format_summary_html;
+    format_summary_html -> export_to_markdown;
+
+    edge [label="Markdown Export"];
+    export_to_markdown -> export_to_ghost;
+
+    edge [label="Publish to Ghost"];
+    export_to_ghost -> null;
+
+    edge [label="Healthchecks.io Pings"];
+    db_store -> healthchecks_io;
+    import_all_channels -> healthchecks_io;
+    export_to_ghost -> healthchecks_io;
+
+    edge [label="New Video Notifications"];
+    new_video_notification [label="Notification", shape=diamond];
+    db_store -> new_video_notification;
+    import_all_channels -> new_video_notification;
+
+    edge [label="Session Logging"];
+    session_logging [label="Log Session", shape=diamond];
+    db_store -> session_logging;
+    import_all_channels -> session_logging;
+    export_to_ghost -> session_logging;
+}

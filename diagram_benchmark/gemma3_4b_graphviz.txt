@@ -1,0 +1,39 @@
+digraph PipelineName {
+    rankdir=LR;
+    node [shape=box, style=filled, fillcolor=lightblue];
+    edge [style=filled, fillcolor=lightgrey];
+
+    cluster_import [label="cluster_import", shape=cluster, style=filled, fillcolor=lightgreen];
+
+    YouTubeAPI [label="YouTubeAPI", shape=cylinder, fillcolor=lightcoral];
+    ConfigFile [label="ConfigFile", shape=cylinder, fillcolor=lightcoral];
+    EnvFile [label="EnvFile", shape=cylinder, fillcolor=lightcoral];
+
+    LoadChannels [label="LoadChannels", shape=box, fillcolor=lightcoral];
+    ImportVideos [label="ImportVideos", shape=box, fillcolor=lightcoral];
+    SQLiteDB [label="SQLiteDB", shape=cylinder, fillcolor=lightcoral];
+
+    GetTranscript [label="GetTranscript", shape=box, fillcolor=lightcoral];
+    GenerateSummary [label="GenerateSummary", shape=box, fillcolor=lightcoral];
+    FormatHTML [label="FormatHTML", shape=box, fillcolor=lightcoral];
+    ExportMarkdown [label="ExportMarkdown", shape=box, fillcolor=lightcoral];
+    ObsidianVault [label="ObsidianVault", shape=cylinder, fillcolor=lightcoral];
+
+    ExportGhost [label="ExportGhost", shape=box, fillcolor=lightcoral];
+    GhostBlog [label="GhostBlog", shape=cylinder, fillcolor=lightcoral];
+
+    HealthCheck [label="HealthCheck", shape=box, fillcolor=lightcoral];
+    Notifications [label="Notifications", shape=box, fillcolor=lightcoral];
+
+    YouTubeAPI -> LoadChannels;
+    ConfigFile -> LoadChannels;
+    EnvFile -> LoadChannels;
+    LoadChannels -> ImportVideos;
+    ImportVideos -> SQLiteDB;
+    GetTranscript -> GenerateSummary;
+    GenerateSummary -> FormatHTML;
+    FormatHTML -> ExportMarkdown;
+    ExportMarkdown -> ObsidianVault;
+    ExportGhost -> GhostBlog;
+    HealthCheck -> Notifications;
+}

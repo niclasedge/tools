@@ -1,0 +1,14 @@
+[
+  {
+    "model": "qwen3:8b",
+    "prompt": "Generate ONLY valid Graphviz DOT code for a flowchart: Start -> Check Input -> Process Data -> Output Results -> End. Output ONLY the DOT code, no explanations.",
+    "success": true,
+    "response": "digraph Flowchart {\n    \"Start\" -> \"Check Input\";\n    \"Check Input\" -> \"Process Data\";\n    \"Process Data\" -> \"Output Results\";\n    \"Output Results\" -> End;\n}",
+    "extracted_dot_code": "digraph Flowchart {\n    \"Start\" -> \"Check Input\";\n    \"Check Input\" -> \"Process Data\";\n    \"Process Data\" -> \"Output Results\";\n    \"Output Results\" -> End;\n}",
+    "valid_graphviz": true,
+    "validation_errors": [],
+    "error": null,
+    "png_path": "./model_tests/qwen3_8b_output.png",
+    "dot_path": "./model_tests/qwen3_8b_output.dot"
+  }
+]

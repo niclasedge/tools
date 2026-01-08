@@ -1,0 +1,25 @@
+digraph SoftwareDevelopment {
+    rankdir=LR;
+    node [shape=box];
+    edge [arrowhead=normal];
+
+    Start [label="Start", shape=ellipse];
+    Requirements [label="Requirements"];
+    Design [label="Design"];
+    Implementation [label="Implementation"];
+    Testing [label="Testing"];
+    Deployment [label="Deployment"];
+    Maintenance [label="Maintenance"];
+    End [label="End", shape=ellipse];
+
+    Start -> Requirements;
+    Requirements -> Design;
+    Design -> Implementation;
+    Implementation -> Testing;
+    Testing -> Deployment [label="No Bugs Found"];
+    Deployment -> Maintenance;
+    Maintenance -> Testing [label="Bugs Found"];
+    Testing -> Implementation [label="Bugs Found"];
+
+    End -> Start;
+}

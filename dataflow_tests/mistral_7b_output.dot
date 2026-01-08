@@ -1,0 +1,66 @@
+digraph pipeline {
+    rankdir=LR;
+
+    // Data Sources
+    subgraph cluster_data_sources {
+        label="Data Sources";
+        API[shape=cylinder color=red];
+        config[shape=folder];
+        credentials[shape=folder];
+        API -> config;
+        config -> load_channels;
+    }
+
+    // Phase 1 - Import
+    subgraph cluster_import {
+        label="Import";
+        load_channels[shape=Mrecord];
+        import_all_channels[shape=rectangle];
+        DB[shape=cylinder color=green];
+        load_channels -> import_all_channels;
+        import_all_channels -> DB;
+    }
+
+    // Phase 2 - Processing (per video)
+    subgraph cluster_processing {
+        label="Processing";
+        transcript[shape=diamond];
+        summary[shape=record];
+        HTML[shape=folder color=blue];
+        Markdown[shape=folder];
+        Vault[shape=cylinder color=green];
+        transcript -> generate_summary;
+        generate_summary -> format_summary_HTML;
+        format_summary_HTML -> export_to_markdown;
+        export_to_markdown -> Markdown;
+        Markdown -> Vault;
+    }
+
+    // Phase 3 - Export
+    subgraph cluster_export {
+        label="Export";
+        Blog[shape=cylinder color=green];
+        export_to_ghost[shape=rectangle];
+        Blog -> export_to_ghost;
+        export_to_ghost -> Ghost;
+    }
+
+    // Monitoring
+    healthchecks[shape=diamond color=red];
+    notifications[shape=diamond color=blue];
+    logging[shape=folder color=green];
+    healthchecks -> import;
+    healthchecks -> export_to_ghost;
+    notifications -> new_videos;
+    logging -> Session;
+
+    // Connections
+    config -> load_channels;
+    import_all_channels -> DB;
+    transcript -> generate_summary;
+    generate_summary -> format_summary_HTML;
+    format_summary_HTML -> export_to_markdown;
+    export_to_markdown -> Markdown;
+    Markdown -> Vault;
+    export_to_ghost -> Blog;
+}

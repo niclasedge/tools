@@ -1,0 +1,68 @@
+digraph PipelineName {
+    // Node definitions
+    YouTubeAPI [shape=box, style=filled, fillcolor=lightblue];
+    ConfigFile [shape=folder, style=filled, fillcolor=lightgreen];
+    EnvFile [shape=folder, style=filled, fillcolor=lightyellow];
+    LoadChannels [shape=box, style=filled, fillcolor=orange, label="load_channels()"];
+    ImportVideos [shape=box, style=filled, fillcolor=orange, label="import_videos()"];
+    SQLiteDB [shape=cylinder, style=filled, fillcolor=lightgray];
+    GetTranscript [shape=box, style=filled, fillcolor=orange, label="get_transcript()"];
+    GenerateSummary [shape=box, style=filled, fillcolor=orange, label="generate_summary()"];
+    FormatHTML [shape=box, style=filled, fillcolor=orange, label="format_html()"];
+    ExportMarkdown [shape=folder, style=filled, fillcolor=lightgreen];
+    ObsidianVault [shape=folder, style=filled, fillcolor=lightgreen];
+    ExportGhost [shape=folder, style=filled, fillcolor=lightgreen];
+    GhostBlog [shape=folder, style=filled, fillcolor=lightgreen];
+    HealthCheck [shape=box, style=filled, fillcolor=lightpink, label="health_check()"];
+    Notifications [shape=box, style=filled, fillcolor=lightpink, label="notifications()"];
+
+    // Clusters
+    subgraph cluster_import {
+        label="Phase 1 Import";
+        LoadChannels;
+        ImportVideos;
+        SQLiteDB;
+    }
+
+    subgraph cluster_process {
+        label="Phase 2 Process";
+        GetTranscript;
+        GenerateSummary;
+        FormatHTML;
+        ExportMarkdown;
+        ObsidianVault;
+    }
+
+    subgraph cluster_export {
+        label="Phase 3 Export";
+        ExportGhost;
+        GhostBlog;
+    }
+
+    subgraph cluster_monitoring {
+        label="Monitoring";
+        HealthCheck;
+        Notifications;
+    }
+
+    // Edges
+    EnvFile -> ConfigFile;
+    ConfigFile -> LoadChannels;
+    YouTubeAPI -> LoadChannels;
+    LoadChannels -> ImportVideos;
+    ImportVideos -> SQLiteDB;
+
+    ImportVideos -> GetTranscript;
+    GetTranscript -> GenerateSummary;
+    GenerateSummary -> FormatHTML;
+    FormatHTML -> ExportMarkdown;
+    ExportMarkdown -> ObsidianVault;
+
+    ObsidianVault -> ExportGhost;
+    ExportGhost -> GhostBlog;
+
+    SQLiteDB -> HealthCheck;
+    ObsidianVault -> HealthCheck;
+    GhostBlog -> HealthCheck;
+    HealthCheck -> Notifications;
+}

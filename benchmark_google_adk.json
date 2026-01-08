@@ -1,0 +1,132 @@
+{
+  "timestamp": "2026-01-08T10:09:35Z",
+  "sdk": "Google ADK",
+  "model": "gemma3:4b",
+  "quickMode": {
+    "successRate": 0.8,
+    "avgDurationMs": 17924.76177215576,
+    "results": [
+      {
+        "name": "Simple Pipeline",
+        "description": "A data pipeline: Input -> Validate -> Process -> Output",
+        "format": "graphviz",
+        "success": true,
+        "duration_ms": 79842.46516227722,
+        "code_length": 230,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "Microservices",
+        "description": "Microservices: API Gateway connects to User Service, Order Service, Payment Service. All connect to PostgreSQL.",
+        "format": "graphviz",
+        "success": true,
+        "duration_ms": 2493.2758808135986,
+        "code_length": 459,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "Login Flow",
+        "description": "User login: Start -> Enter credentials -> Validate -> If valid go to Dashboard else Error -> End",
+        "format": "mermaid",
+        "success": false,
+        "duration_ms": 1404.4418334960938,
+        "code_length": 163,
+        "valid": false,
+        "errors": [
+          "Unbalanced subgraph/end: 0 subgraph vs 1 end"
+        ],
+        "iterations": 0
+      },
+      {
+        "name": "Web Architecture",
+        "description": "Web app: Browser -> Load Balancer -> 3 Web Servers -> Redis Cache -> PostgreSQL -> Backup",
+        "format": "graphviz",
+        "success": true,
+        "duration_ms": 3295.320987701416,
+        "code_length": 606,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "CI/CD Pipeline",
+        "description": "CI/CD: Code Push -> Build -> Test -> Deploy to Staging -> E2E Tests -> Deploy to Production",
+        "format": "graphviz",
+        "success": true,
+        "duration_ms": 2588.3049964904785,
+        "code_length": 410,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      }
+    ]
+  },
+  "fullPipeline": {
+    "successRate": 0.8,
+    "avgDurationMs": 3472.9501247406006,
+    "avgIterations": 0.6,
+    "results": [
+      {
+        "name": "Simple Pipeline",
+        "description": "A data pipeline: Input -> Validate -> Process -> Output",
+        "format": "graphviz",
+        "success": true,
+        "duration_ms": 2065.7880306243896,
+        "code_length": 262,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "Microservices",
+        "description": "Microservices: API Gateway connects to User Service, Order Service, Payment Service. All connect to PostgreSQL.",
+        "format": "graphviz",
+        "success": true,
+        "duration_ms": 2756.3459873199463,
+        "code_length": 475,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "Login Flow",
+        "description": "User login: Start -> Enter credentials -> Validate -> If valid go to Dashboard else Error -> End",
+        "format": "mermaid",
+        "success": false,
+        "duration_ms": 4906.385898590088,
+        "code_length": 206,
+        "valid": false,
+        "errors": [
+          "Unbalanced subgraph/end: 0 subgraph vs 2 end"
+        ],
+        "iterations": 3
+      },
+      {
+        "name": "Web Architecture",
+        "description": "Web app: Browser -> Load Balancer -> 3 Web Servers -> Redis Cache -> PostgreSQL -> Backup",
+        "format": "graphviz",
+        "success": true,
+        "duration_ms": 4685.992956161499,
+        "code_length": 711,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      },
+      {
+        "name": "CI/CD Pipeline",
+        "description": "CI/CD: Code Push -> Build -> Test -> Deploy to Staging -> E2E Tests -> Deploy to Production",
+        "format": "graphviz",
+        "success": true,
+        "duration_ms": 2950.23775100708,
+        "code_length": 428,
+        "valid": true,
+        "errors": [],
+        "iterations": 0
+      }
+    ]
+  }
+}

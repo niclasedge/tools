@@ -1,0 +1,50 @@
+digraph PipelineName {
+    node [shape=box, fontname="Verdana", fontsize=12, fillcolor=lightblue, style=filled]
+    env_file [label="env_file"]
+    config_file [label="ConfigFile"]
+    youtubeapi [label="YouTubeAPI"]
+
+    subgraph cluster_import {
+        node [shape=folder, fontname="Verdana", fontsize=12, fillcolor=lightgreen, style=filled]
+        load_channels [label="LoadChannels"]
+        import_videos [label="ImportVideos"]
+        sqlitedb [label="SQLiteDB" shape=cylinder]
+        sqlitedb -> load_channels
+        sqlitedb -> import_videos
+    }
+
+    subgraph cluster_process {
+        node [shape=box, fontname="Verdana", fontsize=12, fillcolor=lightyellow, style=filled]
+        get_transcript [label="GetTranscript"]
+        generate_summary [label="GenerateSummary"]
+        formathtml [label="FormatHTML"]
+        exportmarkdown [label="ExportMarkdown"]
+        obsidianvault [label="ObsidianVault" shape=cylinder]
+        obsidianvault -> get_transcript
+        obsidianvault -> generate_summary
+        obsidianvault -> formathtml
+        obsidianvault -> exportmarkdown
+    }
+
+    subgraph cluster_export {
+        node [shape=box, fontname="Verdana", fontsize=12, fillcolor=lightpink, style=filled]
+        exportghost [label="ExportGhost"]
+        ghostblog [label="GhostBlog" shape=cylinder]
+        ghostblog -> exportghost
+    }
+
+    subgraph cluster_monitoring {
+        node [shape=box, fontname="Verdana", fontsize=12, fillcolor=lightgrey, style=filled]
+        healthcheck [label="HealthCheck"]
+        notifications [label="Notifications"]
+    }
+
+    youtubeapi -> cluster_import:load_channels
+    config_file -> cluster_import:config_file
+    env_file -> cluster_import:env_file
+    load_channels -> import_videos
+    import_videos -> sqlitedb
+    obsidianvault -> cluster_export:exportghost
+    healthcheck -> cluster_monitoring:healthcheck
+    notifications -> cluster_monitoring:notifications
+}

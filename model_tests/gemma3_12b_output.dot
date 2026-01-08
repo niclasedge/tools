@@ -1,0 +1,20 @@
+digraph software_development {
+  rankdir=TD;
+  node [shape=box, style=rounded];
+
+  start [shape=ellipse, label="Requirements"];
+  design [shape=box, label="Design"];
+  implementation [shape=box, label="Implementation"];
+  testing [shape=box, label="Testing"];
+  deployment [shape=box, label="Deployment"];
+  maintenance [shape=box, label="Maintenance"];
+  end [shape=ellipse, label="End"];
+
+  start -> design;
+  design -> implementation;
+  implementation -> testing;
+  testing -> deployment [label="No Bugs"];
+  testing -> implementation [label="Bugs Found", style=dashed];
+  deployment -> maintenance;
+  maintenance -> start [label="New Requirements"];
+}

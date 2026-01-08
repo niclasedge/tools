@@ -1,0 +1,19 @@
+digraph software_development {
+  rankdir=LR;
+  node [shape=box];
+
+  Requirements [shape=ellipse];
+  Design [shape=ellipse];
+  Implementation [shape=ellipse];
+  Testing [shape=ellipse];
+  Deployment [shape=ellipse];
+  Maintenance [shape=ellipse];
+
+  Requirements -> Design;
+  Design -> Implementation;
+  Implementation -> Testing;
+  Testing -> Deployment;
+  Deployment -> Maintenance;
+
+  Testing -> Implementation [label="Bugs Found", color="red"];
+}

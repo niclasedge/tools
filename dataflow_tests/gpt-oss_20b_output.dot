@@ -1,0 +1,66 @@
+digraph youtube_video_summary_pipeline {
+    rankdir=LR;
+    node [fontname="Helvetica", fontsize=10];
+
+    /* Data Sources */
+    youtube_api [label="YouTube API", shape=cylinder, style=filled, fillcolor=red];
+    channels_yaml [label="channels.yaml", shape=folder, style=filled, fillcolor=red];
+    env_file [label=".env", shape=folder, style=filled, fillcolor=red];
+
+    /* Phase 1 – IMPORT */
+    subgraph cluster_import {
+        label="Phase 1 – IMPORT";
+        color=blue;
+        load_channels [label="load_channels()", shape=box];
+        import_all_channels [label="import_all_channels()", shape=box];
+        sqlite_db [label="SQLite DB", shape=cylinder, style=filled, fillcolor=lightblue];
+
+        channels_yaml -> load_channels [label="channels list", color=blue];
+        env_file -> load_channels [label="API credentials", color=blue];
+        load_channels -> import_all_channels [color=green];
+        import_all_channels -> sqlite_db [label="video records", color=blue];
+        youtube_api -> import_all_channels [label="import videos", color=blue];
+    }
+
+    /* Phase 2 – PROCESSING (per video) */
+    subgraph cluster_processing {
+        label="Phase 2 – PROCESSING";
+        color=blue;
+        get_transcript [label="get_transcript()", shape=box];
+        generate_summary [label="generate_summary()", shape=box];
+        format_summary_html [label="format_summary_html()", shape=box];
+        export_to_markdown [label="export_to_markdown()", shape=box];
+        obsidian_vault [label="Obsidian Vault", shape=folder, style=filled, fillcolor=lightyellow];
+
+        sqlite_db -> get_transcript [color=green];
+        get_transcript -> generate_summary [color=green];
+        generate_summary -> format_summary_html [color=green];
+        format_summary_html -> export_to_markdown [color=green];
+        export_to_markdown -> obsidian_vault [label="summary.md", color=blue];
+    }
+
+    /* Phase 3 – EXPORT */
+    subgraph cluster_export {
+        label="Phase 3 – EXPORT";
+        color=blue;
+        export_to_ghost [label="export_to_ghost()", shape=box];
+        ghost_api [label="Ghost API", shape=cylinder, style=filled, fillcolor=lightgreen];
+
+        obsidian_vault -> export_to_ghost [color=green];
+        export_to_ghost -> ghost_api [label="POST /posts", color=blue];
+    }
+
+    /* Monitoring */
+    subgraph cluster_monitoring {
+        label="Monitoring";
+        color=blue;
+        healthchecks [label="healthchecks.io", shape=box, style=filled, fillcolor=lightgrey];
+        notifications [label="Notifications", shape=box, style=filled, fillcolor=lightgrey];
+        session_logging [label="Session Logging", shape=box, style=filled, fillcolor=lightgrey];
+
+        export_to_ghost -> healthchecks [label="Ping on success", color=green];
+        export_to_ghost -> notifications [label="New video alert", color=green];
+        healthchecks -> session_logging [color=green];
+        notifications -> session_logging [color=green];
+    }
+}

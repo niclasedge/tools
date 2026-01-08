@@ -1,0 +1,64 @@
+flowchart LR
+    subgraph Sources["Data Sources"]
+        YT[("YouTube API")]
+        Config["channels.yaml"]
+        Env["env credentials"]
+    end
+
+    subgraph Import["Phase 1: Import"]
+        Load["load_channels()"]
+        ImportFn["import_all_channels()"]
+    end
+
+    subgraph DB["Database"]
+        SQLite[("SQLite DB")]
+    end
+
+    subgraph Process["Phase 2: Processing"]
+        Transcript["get_transcript()"]
+        Summary["generate_summary()<br>Ollama LLM"]
+        Format["format_summary_html()"]
+        ExportMD["export_to_markdown()"]
+    end
+
+    subgraph Export["Phase 3: Export"]
+        Ghost["export_to_ghost()"]
+    end
+
+    subgraph Outputs["Outputs"]
+        Obsidian[/"Obsidian Vault"/]
+        Blog[/"Ghost Blog"/]
+    end
+
+    subgraph Monitor["Monitoring"]
+        Health(["healthchecks.io"])
+        Notify(["Notifications"])
+    end
+
+    Config --> Load
+    Env -.-> ImportFn
+    YT ==> ImportFn
+    Load --> ImportFn
+    ImportFn --> SQLite
+    ImportFn -.-> Notify
+    ImportFn -.-> Health
+
+    SQLite --> Transcript
+    Transcript --> Summary
+    Summary --> Format
+    Format --> SQLite
+    SQLite --> ExportMD
+    ExportMD --> Obsidian
+
+    SQLite --> Ghost
+    Ghost --> Blog
+    Ghost -.-> Health
+
+    style YT fill:#FF6B6B
+    style Sources fill:#E3F2FD
+    style Import fill:#E8F5E9
+    style DB fill:#F3E5F5
+    style Process fill:#FFF3E0
+    style Export fill:#E0F7FA
+    style Outputs fill:#ECEFF1
+    style Monitor fill:#FCE4EC

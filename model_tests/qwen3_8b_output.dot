@@ -1,0 +1,13 @@
+digraph SoftwareDev {
+    node [shape=ellipse]; Requirements;
+    node [shape=box]; Design; Implementation; Testing; Deployment;
+    node [shape=diamond]; BugsFound;
+
+    Requirements -> Design;
+    Design -> Implementation;
+    Implementation -> Testing;
+    Testing -> BugsFound;
+    BugsFound -> Implementation [label="Yes"];
+    BugsFound -> Deployment [label="No"];
+    Deployment -> Maintenance;
+}

@@ -1,0 +1,56 @@
+@startuml
+' Data Sources
+package "Data Sources" {
+  [YouTube API]
+  [channels.yaml]
+  [env credentials]
+}
+
+' Phase 1 Import
+package "Phase 1 Import" {
+  [load_channels]
+  [import_all_channels]
+  database "SQLite DB" as db
+}
+
+' Phase 2 Process
+package "Phase 2 Process" {
+  [get_transcript]
+  [generate_summary]
+  [format_summary_html]
+  [export_to_markdown]
+  cloud "Obsidian" as obs
+}
+
+' Phase 3 Export
+package "Phase 3 Export" {
+  [export_to_ghost]
+  cloud "Ghost Blog" as ghost
+}
+
+' Monitoring
+package "Monitoring" {
+  [healthchecks.io]
+  [Notifications]
+}
+
+' Flow arrows
+[YouTube API] --> [load_channels]
+[channels.yaml] --> [load_channels]
+[env credentials] --> [load_channels]
+[load_channels] --> [import_all_channels]
+[import_all_channels] --> db
+
+db --> [get_transcript]
+[get_transcript] --> [generate_summary]
+[generate_summary] --> [format_summary_html]
+[format_summary_html] --> [export_to_markdown]
+[export_to_markdown] --> obs
+
+obs --> [export_to_ghost]
+[export_to_ghost] --> ghost
+
+' Monitoring arrows
+db ..> [healthchecks.io]
+[healthchecks.io] ..> [Notifications]
+@enduml

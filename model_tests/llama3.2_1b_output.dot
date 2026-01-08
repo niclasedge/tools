@@ -1,0 +1,27 @@
+digraph software_development_process {
+    // Requirements
+    Requirements -> design;
+    Requirements -> implementation;
+
+    // Design
+    Design -> requirements;
+    Design -> implementation;
+
+    // Implementation
+    Implementation -> testing;
+    Implementation -> deployment;
+    Implementation -> maintenance;
+
+    // Testing
+    Testing -> feedback_loop;
+    Testing -> implementation;
+
+    // Feedback Loop
+    Feedback_loop -> implementation;
+
+    // Deployment
+    Deployment -> maintenance;
+
+    // Maintenance
+    Maintenance -> deployment;
+}
