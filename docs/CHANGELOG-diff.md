@@ -1,7 +1,31 @@
 # Changelog - Commit Details
 
 > Automatisch generiert aus Git-Historie
-> Letzte Aktualisierung: 2026-01-08 18:52:18 UTC
+> Letzte Aktualisierung: 2026-01-08 19:02:30 UTC
+
+---
+
+## 2026-01-08 20:00
+**Commit:** `e83a586d`
+**Autor:** niclasedge
+**Nachricht:** docs: Add CHANGELOG-diff.md to mkdocs.yml navigation
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+| `mkdocs.yml` | +1 |
+
+---
+
+## 2026-01-08 18:52
+**Commit:** `f07c7f56`
+**Autor:** github-actions[bot]
+**Nachricht:** docs: Update CHANGELOG-diff.md [skip ci]
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+| `docs/CHANGELOG-diff.md` | +3133 |
 
 ---
 
