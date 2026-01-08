@@ -1,0 +1,68 @@
+name: Claude Token Expiry Check
+
+on:
+  schedule:
+    # Täglich um 8:00 UTC (9:00 Berlin Winter / 10:00 Berlin Sommer)
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+env:
+  NTFY_URL: https://ntfy.niclasedge.com/alerts
+  NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+
+jobs:
+  check-token:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Token Expiry
+        run: |
+          EXPIRES_AT="${{ secrets.CLAUDE_EXPIRES_AT }}"
+          CURRENT_TIME=$(date +%s)
+
+          if [ -z "$EXPIRES_AT" ]; then
+            echo "No EXPIRES_AT secret set - skipping check"
+            exit 0
+          fi
+
+          REMAINING=$((EXPIRES_AT - CURRENT_TIME))
+          HOURS_REMAINING=$((REMAINING / 3600))
+
+          echo "Token expires in $HOURS_REMAINING hours"
+
+          # Warnung wenn weniger als 12 Stunden
+          if [ "$HOURS_REMAINING" -lt 12 ]; then
+            EXPIRE_DATE=$(date -d "@$EXPIRES_AT" '+%Y-%m-%d %H:%M' 2>/dev/null || date -r "$EXPIRES_AT" '+%Y-%m-%d %H:%M')
+
+            curl -s \
+              -H "Authorization: Bearer $NTFY_TOKEN" \
+              -H "Title: Claude Token laeuft bald ab!" \
+              -H "Priority: high" \
+              -H "Tags: warning,clock,claude" \
+              -H "Actions: view, Token erneuern, https://github.com/${{ github.repository }}/settings/secrets/actions" \
+              -d "OAuth Token laeuft in $HOURS_REMAINING Stunden ab!
+
+            Ablauf: $EXPIRE_DATE
+
+            Bitte Token erneuern:
+            1. claude /login
+            2. Neue Credentials kopieren
+            3. GitHub Secrets aktualisieren" \
+              "$NTFY_URL"
+
+            echo "Warning notification sent!"
+          else
+            echo "Token still valid - no notification needed"
+          fi
+
+          # Kritisch wenn weniger als 1 Stunde
+          if [ "$HOURS_REMAINING" -lt 1 ]; then
+            curl -s \
+              -H "Authorization: Bearer $NTFY_TOKEN" \
+              -H "Title: KRITISCH: Claude Token!" \
+              -H "Priority: urgent" \
+              -H "Tags: rotating_light,key,claude" \
+              -d "Token laeuft in weniger als 1 Stunde ab!
+
+            Sofort erneuern oder GitHub Actions funktionieren nicht mehr!" \
+              "$NTFY_URL"
+          fi
