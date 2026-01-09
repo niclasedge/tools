@@ -1,7 +1,31 @@
 # Changelog - Commit Details
 
 > Automatisch generiert aus Git-Historie
-> Letzte Aktualisierung: 2026-01-08 22:44:00 UTC
+> Letzte Aktualisierung: 2026-01-09 07:48:03 UTC
+
+---
+
+## 2026-01-09 08:47
+**Commit:** `c2700efa`
+**Autor:** niclasedge
+**Nachricht:** chore: sync claude-agent workflow
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+| `.github/workflows/claude-agent.yml` | +210 -100 |
+
+---
+
+## 2026-01-08 22:44
+**Commit:** `bd4aa9d1`
+**Autor:** github-actions[bot]
+**Nachricht:** docs: Update CHANGELOG-diff.md [skip ci]
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+| `docs/CHANGELOG-diff.md` | +27 -1 |
 
 ---
 
