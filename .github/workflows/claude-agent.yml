@@ -2,9 +2,7 @@ name: Claude Code Agent (OAuth)
 
 on:
   issues:
-    types: [opened, labeled]
-  issue_comment:
-    types: [created]
+    types: [labeled]
 
 permissions:
   contents: write
@@ -12,21 +10,36 @@ permissions:
   pull-requests: write
   actions: write
 
-env:
-  NTFY_URL: https://ntfy.niclasedge.com/alerts
-  NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
-
 jobs:
   agent-task:
-    # Trigger bei neuem Issue mit Label ODER @claude Mention im Kommentar
-    if: |
-      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'agent-task')) ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    # Nur wenn agent-task Label hinzugefügt wird
+    if: github.event.label.name == 'agent-task'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
+
+      # Slack: Workflow gestartet
+      - name: Post to Slack - Started
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          if [ -z "$SLACK_BOT_TOKEN" ] || [ -z "$SLACK_CHANNEL_ID" ]; then
+            echo "Slack secrets not configured, skipping"
+            exit 0
+          fi
+
+          curl -s -X POST "https://slack.com/api/chat.postMessage" \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @- << EOF
+          {
+            "channel": "$SLACK_CHANNEL_ID",
+            "text": "#info :rocket: *Workflow gestartet:* ${{ github.event.issue.title }}\n<${{ github.event.issue.html_url }}|Issue #${{ github.event.issue.number }}> | <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"
+          }
+          EOF
 
       # Token-Validierung VOR dem Ausführen
       - name: Check Token Expiry
@@ -53,28 +66,6 @@ jobs:
             echo "Token valid for $((REMAINING / 3600)) hours"
           fi
 
-      # ntfy Benachrichtigung bei abgelaufenem Token
-      - name: Notify Token Expired
-        if: steps.token_check.outputs.token_valid == 'false'
-        run: |
-          curl -s \
-            -H "Authorization: Bearer $NTFY_TOKEN" \
-            -H "Title: Claude Code Token Expired" \
-            -H "Priority: urgent" \
-            -H "Tags: warning,key,claude" \
-            -H "Actions: view, Token erneuern, https://github.com/${{ github.repository }}/settings/secrets/actions" \
-            -d "OAuth Token ist abgelaufen!
-
-          Repo: ${{ github.repository }}
-          Issue: #${{ github.event.issue.number }}
-          Grund: ${{ steps.token_check.outputs.error_reason }}
-
-          Bitte Token erneuern:
-          1. claude /login
-          2. Credentials aus ~/.claude/.credentials.json kopieren
-          3. GitHub Secrets aktualisieren" \
-            "$NTFY_URL"
-
       # Issue kommentieren bei Token-Fehler
       - name: Comment on Issue - Token Expired
         if: steps.token_check.outputs.token_valid == 'false'
@@ -85,21 +76,17 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## Claude Code Token Expired
+              body: `## ⚠️ Claude Code Token Expired
 
             Der OAuth Token ist abgelaufen und muss erneuert werden.
 
             **Grund:** ${{ steps.token_check.outputs.error_reason }}
 
             **So behebst du das:**
-            1. Führe \`claude /login\` aus
-            2. Kopiere die neuen Credentials aus \`~/.claude/.credentials.json\`
-            3. Aktualisiere die GitHub Secrets:
-               - \`CLAUDE_ACCESS_TOKEN\`
-               - \`CLAUDE_REFRESH_TOKEN\`
-               - \`CLAUDE_EXPIRES_AT\`
+            1. Führe den OAuth Login Workflow aus
+            2. Aktualisiere die GitHub Secrets
 
-            Eine ntfy-Benachrichtigung wurde gesendet.`
+            Eine Slack-Benachrichtigung wurde gesendet.`
             });
 
       - name: Fail if Token Invalid
@@ -124,74 +111,197 @@ jobs:
             Beschreibung:
             ${{ github.event.issue.body }}
 
-            Erstelle einen PR mit der Lösung falls Code-Änderungen nötig sind.
+            WICHTIG: Mache NUR die Code-Änderungen. NICHT committen, NICHT pushen, KEINEN PR erstellen, KEINEN Branch erstellen. Das wird automatisch vom Workflow erledigt.
 
-      # Auth-Fehler erkennen und benachrichtigen
+      # PR erstellen falls Änderungen vorhanden
+      - name: Create Pull Request
+        if: steps.claude.outcome == 'success'
+        id: create_pr
+        run: |
+          # Prüfen ob es Änderungen gibt
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Keine Änderungen, kein PR nötig"
+            echo "pr_created=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Branch erstellen
+          BRANCH_NAME="claude/issue-${{ github.event.issue.number }}"
+          git checkout -b "$BRANCH_NAME"
+
+          # Änderungen committen
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: ${{ github.event.issue.title }}
+
+          Closes #${{ github.event.issue.number }}
+
+          Co-Authored-By: Claude <noreply@anthropic.com>"
+
+          # Push und PR erstellen
+          git push origin "$BRANCH_NAME"
+
+          PR_URL=$(gh pr create \
+            --title "${{ github.event.issue.title }}" \
+            --body "## Änderungen
+
+          Automatisch generiert von Claude Code.
+
+          Closes #${{ github.event.issue.number }}
+
+          ---
+          *Erstellt via GitHub Actions*" \
+            --base main \
+            --head "$BRANCH_NAME")
+
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "pr_created=true" >> $GITHUB_OUTPUT
+          echo "PR erstellt: $PR_URL"
+        env:
+          GH_TOKEN: ${{ secrets.SECRETS_ADMIN_PAT }}
+
+      # Auth-Fehler erkennen
       - name: Check for Auth Errors
         if: failure() || steps.claude.outcome == 'failure'
         id: error_check
         run: |
-          # Prüfe ob es ein Auth-Fehler war
           if echo "${{ steps.claude.outputs.error }}" | grep -iE "auth|token|unauthorized|401|expired|invalid_grant"; then
             echo "is_auth_error=true" >> $GITHUB_OUTPUT
           else
             echo "is_auth_error=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Notify Auth Error via ntfy
-        if: steps.error_check.outputs.is_auth_error == 'true'
-        run: |
-          curl -s \
-            -H "Authorization: Bearer $NTFY_TOKEN" \
-            -H "Title: Claude Code Auth Error" \
-            -H "Priority: urgent" \
-            -H "Tags: x,key,claude" \
-            -H "Actions: view, Secrets aktualisieren, https://github.com/${{ github.repository }}/settings/secrets/actions" \
-            -d "Authentication fehlgeschlagen!
-
-          Repo: ${{ github.repository }}
-          Issue: #${{ github.event.issue.number }} - ${{ github.event.issue.title }}
-
-          Der OAuth Token funktioniert nicht mehr.
-          Bitte erneuere die Credentials:
-
-          1. claude /login
-          2. Neue Tokens aus ~/.claude/.credentials.json
-          3. GitHub Secrets aktualisieren" \
-            "$NTFY_URL"
-
-      # Erfolgs-Benachrichtigung
-      - name: Notify Success via ntfy
+      # Letzten Kommentar (Claude's Antwort) holen
+      - name: Get Claude's Comment
         if: steps.claude.outcome == 'success'
+        id: get_comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 1,
+              sort: 'created',
+              direction: 'desc'
+            });
+
+            if (comments.data.length > 0) {
+              const comment = comments.data[0].body;
+              // Für Slack: Markdown zu Slack-Format konvertieren (basic)
+              const slackText = comment
+                .replace(/\*\*/g, '*')  // Bold
+                .replace(/`([^`]+)`/g, '`$1`')  // Code
+                .substring(0, 3000);  // Slack limit
+              core.setOutput('comment', slackText);
+              core.setOutput('comment_url', comments.data[0].html_url);
+            }
+
+      # Issue schließen bei Erfolg
+      - name: Close Issue
+        if: steps.claude.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'completed'
+            });
+
+      # Slack Notification mit Claude's Antwort
+      - name: Post to Slack
+        if: always()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          CLAUDE_COMMENT: ${{ steps.get_comment.outputs.comment }}
+          PR_URL: ${{ steps.create_pr.outputs.pr_url }}
+          PR_CREATED: ${{ steps.create_pr.outputs.pr_created }}
         run: |
-          curl -s \
-            -H "Authorization: Bearer $NTFY_TOKEN" \
-            -H "Title: Claude Code Task Done" \
-            -H "Priority: default" \
-            -H "Tags: white_check_mark,robot,claude" \
-            -H "Actions: view, Issue ansehen, ${{ github.event.issue.html_url }}" \
-            -d "Task erfolgreich bearbeitet!
+          # Skip wenn keine Slack Secrets gesetzt
+          if [ -z "$SLACK_BOT_TOKEN" ] || [ -z "$SLACK_CHANNEL_ID" ]; then
+            echo "Slack secrets not configured, skipping notification"
+            exit 0
+          fi
 
-          Repo: ${{ github.repository }}
-          Issue: #${{ github.event.issue.number }}
-          ${{ github.event.issue.title }}" \
-            "$NTFY_URL"
+          # Status bestimmen
+          if [ "${{ steps.claude.outcome }}" == "success" ]; then
+            STATUS_EMOJI=":white_check_mark:"
+            STATUS_TEXT="Erfolgreich"
+            COLOR="good"
+          elif [ "${{ steps.token_check.outputs.token_valid }}" == "false" ]; then
+            STATUS_EMOJI=":key:"
+            STATUS_TEXT="Token abgelaufen"
+            COLOR="warning"
+          elif [ "${{ steps.error_check.outputs.is_auth_error }}" == "true" ]; then
+            STATUS_EMOJI=":lock:"
+            STATUS_TEXT="Auth Fehler"
+            COLOR="danger"
+          else
+            STATUS_EMOJI=":x:"
+            STATUS_TEXT="Fehlgeschlagen"
+            COLOR="danger"
+          fi
 
-      # Allgemeiner Fehler (nicht Auth)
-      - name: Notify General Error via ntfy
-        if: failure() && steps.error_check.outputs.is_auth_error != 'true'
-        run: |
-          curl -s \
-            -H "Authorization: Bearer $NTFY_TOKEN" \
-            -H "Title: Claude Code Error" \
-            -H "Priority: high" \
-            -H "Tags: x,robot,claude" \
-            -H "Actions: view, Workflow ansehen, https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            -d "Task fehlgeschlagen!
+          # Claude's Antwort für JSON escapen
+          ESCAPED_COMMENT=$(echo "$CLAUDE_COMMENT" | jq -Rs '.')
 
-          Repo: ${{ github.repository }}
-          Issue: #${{ github.event.issue.number }}
-          ${{ github.event.issue.title }}
+          # PR Link hinzufügen falls vorhanden
+          if [ "$PR_CREATED" == "true" ] && [ -n "$PR_URL" ]; then
+            CONTEXT_TEXT="<${{ github.event.issue.html_url }}|Issue> | <$PR_URL|Pull Request> | <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"
+          else
+            CONTEXT_TEXT="<${{ github.event.issue.html_url }}|Issue #${{ github.event.issue.number }}> | <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"
+          fi
 
-          Siehe Workflow-Logs für Details." \
-            "$NTFY_URL"
+          # Slack Message senden
+          curl -s -X POST "https://slack.com/api/chat.postMessage" \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @- << EOF
+          {
+            "channel": "$SLACK_CHANNEL_ID",
+            "attachments": [
+              {
+                "color": "$COLOR",
+                "blocks": [
+                  {
+                    "type": "header",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "#info $STATUS_EMOJI ${{ github.event.issue.title }}",
+                      "emoji": true
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": $ESCAPED_COMMENT
+                    }
+                  },
+                  {
+                    "type": "context",
+                    "elements": [
+                      {
+                        "type": "mrkdwn",
+                        "text": "$CONTEXT_TEXT"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "<@niclasedge>"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
