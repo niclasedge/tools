@@ -1,7 +1,43 @@
 # Changelog - Commit Details
 
 > Automatisch generiert aus Git-Historie
-> Letzte Aktualisierung: 2026-01-09 07:48:03 UTC
+> Letzte Aktualisierung: 2026-01-09 09:45:26 UTC
+
+---
+
+## 2026-01-09 10:45
+**Commit:** `facdaa7a`
+**Autor:** niclasedge
+**Nachricht:** Merge pull request #5 from niclasedge/claude/issue-4
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+
+---
+
+## 2026-01-09 09:32
+**Commit:** `be595df1`
+**Autor:** github-actions[bot]
+**Nachricht:** fix: update die Readme mit aktuellen repoo daten übersicht
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+| `README.md` | +88 -1 |
+| `output.txt` | +45 |
+
+---
+
+## 2026-01-09 07:48
+**Commit:** `927c91c9`
+**Autor:** github-actions[bot]
+**Nachricht:** docs: Update CHANGELOG-diff.md [skip ci]
+
+### Geänderte Dateien
+| Datei | Änderungen |
+|-------|------------|
+| `docs/CHANGELOG-diff.md` | +25 -1 |
 
 ---
 
