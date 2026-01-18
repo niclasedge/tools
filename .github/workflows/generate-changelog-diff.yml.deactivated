@@ -1,12 +1,12 @@
 name: Generate Changelog Diff
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    paths-ignore:
-      - 'docs/CHANGELOG-diff.md'
+  # push:
+  #   branches:
+  #     - main
+  #     - master
+  #   paths-ignore:
+  #     - 'docs/CHANGELOG-diff.md'
   workflow_dispatch:
 
 jobs:

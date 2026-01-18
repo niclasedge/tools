@@ -1,9 +1,9 @@
 name: Claude Token Expiry Check
 
 on:
-  schedule:
-    # Täglich um 8:00 UTC (9:00 Berlin Winter / 10:00 Berlin Sommer)
-    - cron: '0 8 * * *'
+  # schedule:
+  #   # Täglich um 8:00 UTC (9:00 Berlin Winter / 10:00 Berlin Sommer)
+  #   - cron: '0 8 * * *'
   workflow_dispatch:
 
 env:
