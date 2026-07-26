@@ -1,0 +1,5 @@
+# Never commit secrets. .env.example files are the tracked template.
+.env
+*/.env
+**/.env
+!**/.env.example
