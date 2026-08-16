@@ -3,3 +3,27 @@
 */.env
 **/.env
 !**/.env.example
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build output
+dist/
+_site/
+
+# Runtime / local tooling state
+logs/
+*.log
+.serena/
+
+# OS
+.DS_Store
