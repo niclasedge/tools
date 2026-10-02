@@ -2,6 +2,8 @@ name: Publish site
 
 on:
   push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -13,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        # Volle History: gather_links.py liest pro Tool die Commits fürs Colophon.
+        fetch-depth: 0
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -44,6 +49,7 @@ jobs:
         path: '_site'
         
   deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
